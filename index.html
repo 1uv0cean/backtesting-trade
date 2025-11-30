@@ -1084,12 +1084,20 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
                 const low = candle.low;
 
                 if (currentDirection === 'long') {
+                    // Check SL first if it's safer than Liq Price
+                    if (slPrice > liqPrice && low <= slPrice) { finishGame('loss'); return; }
+                    
                     if (low <= liqPrice) { finishGame('liquidation'); return; }
-                    if (low <= slPrice) { finishGame('loss'); return; }
+                    if (low <= slPrice) { finishGame('loss'); return; } // Fallback if SL was worse than Liq (though Liq would hit first usually)
+                    
                     if (high >= tpPrice) { finishGame('win'); return; }
                 } else {
+                    // Check SL first if it's safer than Liq Price
+                    if (slPrice < liqPrice && high >= slPrice) { finishGame('loss'); return; }
+                    
                     if (high >= liqPrice) { finishGame('liquidation'); return; }
                     if (high >= slPrice) { finishGame('loss'); return; }
+                    
                     if (low <= tpPrice) { finishGame('win'); return; }
                 }
 
