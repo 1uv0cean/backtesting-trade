@@ -423,20 +423,7 @@
         </div>
     </div>
 
-    <div class="tools-bar">
-        <button class="btn-tool" id="btn-trendline" onclick="setTool('trendline')">
-            <i class="fa-solid fa-pen"></i> Trend Line
-        </button>
-        <button class="btn-tool" id="btn-fib" onclick="setTool('fib')">
-            <i class="fa-solid fa-ruler-combined"></i> Fib Retracement
-        </button>
-        <button class="btn-tool" id="btn-horz" onclick="setTool('horz')">
-            <i class="fa-solid fa-minus"></i> Horz Line
-        </button>
-        <button class="btn-tool" onclick="clearTrendLines()">
-            <i class="fa-solid fa-trash"></i> Clear All
-        </button>
-    </div>
+    <!-- Tools Bar Removed -->
 
     <div id="error-overlay"></div>
 
@@ -526,10 +513,7 @@
 
         // --- State ---
         let chart, candleSeries, tpLine, slLine;
-        let trendLines = [];
-        let activeTool = null; // 'trendline', 'fib', 'horz'
-        let drawPoints = [];
-        let tempSeries = null; // For previewing drawing
+        // Drawing state removed
         let currentScenario = null;
         let currentDirection = 'long';
         let entryPrice = 0;
@@ -608,233 +592,8 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
             window.addEventListener('resize', () => {
                 chart.resize(container.clientWidth, container.clientHeight);
             });
-
-            // Crosshair Move for Preview
-            chart.subscribeCrosshairMove((param) => {
-                if (!activeTool || !param.point || !param.time) return;
-                
-                const price = candleSeries.coordinateToPrice(param.point.y);
-                const currentPoint = { time: param.time, price: price };
-
-                // If tool is 'horz', preview horizontal line immediately
-                if (activeTool === 'horz') {
-                    updatePreview(currentPoint, null);
-                } 
-                // If 'trendline' or 'fib' and we have 1 point, preview the line
-                else if ((activeTool === 'trendline' || activeTool === 'fib') && drawPoints.length === 1) {
-                    updatePreview(drawPoints[0], currentPoint);
-                }
-            });
-
-            // Click Handler
-            chart.subscribeClick((param) => {
-                if (!activeTool || !param.point || !param.time) return;
-                
-                const price = candleSeries.coordinateToPrice(param.point.y);
-                const time = param.time;
-                const clickedPoint = { time, price };
-
-                if (activeTool === 'horz') {
-                    createHorzLine(price);
-                    resetDrawingState();
-                } else {
-                    drawPoints.push(clickedPoint);
-                    if (drawPoints.length === 2) {
-                        // Finalize drawing
-                        if (activeTool === 'trendline') createTrendLine(drawPoints[0], drawPoints[1]);
-                        if (activeTool === 'fib') createFibRetracement(drawPoints[0], drawPoints[1]);
-                        resetDrawingState();
-                    }
-                }
-            });
         }
 
-        function updatePreview(p1, p2) {
-            // Remove previous temp series
-            if (tempSeries) {
-                try {
-                    chart.removeSeries(tempSeries);
-                } catch (e) {
-                    // Ignore if series already removed
-                }
-                tempSeries = null;
-            }
-
-            if (activeTool === 'horz') {
-                // p1 is the current cursor position for horz
-                tempSeries = chart.addLineSeries({
-                    color: '#9c27b0',
-                    lineWidth: 1,
-                    lineStyle: 2,
-                    crosshairMarkerVisible: false,
-                    lastValueVisible: false,
-                    priceLineVisible: false,
-                });
-                // Draw a flat line across visible data (approx)
-                if (fullBtcData && fullBtcData.length > 0) {
-                    const first = fullBtcData[0].time;
-                    const last = fullBtcData[fullBtcData.length - 1].time + 86400 * 100; // Extend a bit
-                    tempSeries.setData([
-                        { time: first, value: p1.price },
-                        { time: last, value: p1.price }
-                    ]);
-                }
-            } else if (p2) {
-                // Trendline or Fib preview (diagonal line)
-                tempSeries = chart.addLineSeries({
-                    color: activeTool === 'fib' ? '#787b86' : '#2962ff',
-                    lineWidth: 1,
-                    lineStyle: 2, // Dashed for preview
-                    crosshairMarkerVisible: false,
-                    lastValueVisible: false,
-                    priceLineVisible: false,
-                });
-                
-                const data = [
-                    { time: p1.time, value: p1.price },
-                    { time: p2.time, value: p2.price }
-                ];
-                data.sort((a, b) => a.time - b.time);
-                
-                // Ensure distinct times if possible, or valid data
-                if (data[0].time === data[1].time) {
-                     // If times are same, lightweight charts might error on line series? 
-                     // Actually line series can have vertical segments if data is sorted.
-                     // But let's just ensure we don't crash.
-                }
-                
-                tempSeries.setData(data);
-            }
-        }
-
-        function setTool(toolName) {
-            if (activeTool === toolName) {
-                resetDrawingState();
-                return;
-            }
-            resetDrawingState(); // Clear any existing partial state
-            activeTool = toolName;
-            
-            // UI Updates
-            document.querySelectorAll('.btn-tool').forEach(b => b.classList.remove('active'));
-            const btnId = toolName === 'trendline' ? 'btn-trendline' : 
-                          toolName === 'fib' ? 'btn-fib' : 'btn-horz';
-            document.getElementById(btnId).classList.add('active');
-            
-            document.getElementById('chart-container').style.cursor = 'crosshair';
-        }
-
-        function resetDrawingState() {
-            activeTool = null;
-            drawPoints = [];
-            if (tempSeries) {
-                chart.removeSeries(tempSeries);
-                tempSeries = null;
-            }
-            document.querySelectorAll('.btn-tool').forEach(b => b.classList.remove('active'));
-            document.getElementById('chart-container').style.cursor = 'default';
-        }
-
-        function showToast(msg) {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            t.classList.add('visible');
-            setTimeout(() => t.classList.remove('visible'), 2000);
-        }
-
-        function createTrendLine(p1, p2) {
-            const lineSeries = chart.addLineSeries({
-                color: '#2962ff',
-                lineWidth: 2,
-                lastValueVisible: false,
-                priceLineVisible: false,
-                crosshairMarkerVisible: false,
-            });
-            
-            const data = [
-                { time: p1.time, value: p1.price },
-                { time: p2.time, value: p2.price }
-            ];
-            data.sort((a, b) => a.time - b.time);
-            
-            lineSeries.setData(data);
-            trendLines.push(lineSeries);
-        }
-
-        function createHorzLine(price) {
-            const lineSeries = chart.addLineSeries({
-                color: '#9c27b0',
-                lineWidth: 1,
-                lineStyle: 2, // Dashed
-                lastValueVisible: true,
-                priceLineVisible: false,
-                crosshairMarkerVisible: false,
-            });
-            
-            // Create a line spanning the visible range (approx)
-            // Ideally we use a PriceLine on the main series, but that's hard to manage individually
-            // So we'll use a LineSeries with constant value across the loaded data
-            // To make it look "infinite", we can add points at start and end of known data
-            
-            // Better approach for "Horizontal Line" tool in Lightweight Charts:
-            // Add a PriceLine to the main candleSeries!
-            
-            const myPriceLine = candleSeries.createPriceLine({
-                price: price,
-                color: '#9c27b0',
-                lineWidth: 1,
-                lineStyle: 2, // Dashed
-                axisLabelVisible: true,
-                title: 'H-Line',
-            });
-            
-            // Store it to clear later. Note: PriceLines are different from Series.
-            // We'll store it in a separate array or modify how we track "trendLines"
-            // For simplicity, let's wrap it in an object that mimics the remove interface or handle it in clearTrendLines
-            trendLines.push({ isPriceLine: true, obj: myPriceLine });
-        }
-
-        function createFibRetracement(p1, p2) {
-            const levels = [0, 0.236, 0.382, 0.5, 0.618, 0.786, 1];
-            const diff = p2.price - p1.price;
-            
-            // Sort times for drawing
-            const t1 = p1.time < p2.time ? p1.time : p2.time;
-            const t2 = p1.time > p2.time ? p1.time : p2.time;
-
-            levels.forEach(level => {
-                const price = p1.price + (diff * level);
-                const color = level === 0 || level === 1 ? '#787b86' : 
-                              level === 0.5 ? '#ef5350' : '#2962ff';
-                
-                const lineSeries = chart.addLineSeries({
-                    color: color,
-                    lineWidth: 1,
-                    lastValueVisible: false,
-                    priceLineVisible: false,
-                    crosshairMarkerVisible: false,
-                });
-
-                const data = [
-                    { time: t1, value: price },
-                    { time: t2, value: price }
-                ];
-                
-                lineSeries.setData(data);
-                trendLines.push(lineSeries);
-            });
-        }
-
-        function clearTrendLines() {
-            trendLines.forEach(l => {
-                if (l.isPriceLine) {
-                    candleSeries.removePriceLine(l.obj);
-                } else {
-                    chart.removeSeries(l);
-                }
-            });
-            trendLines = [];
-        }
 
         function loadScenario() {
             if (!historicalData || historicalData.length === 0) return;
@@ -901,8 +660,8 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
             const slSlider = document.getElementById('sl-slider');
             
             // Configure slider ranges dynamically based on price
-            const minPrice = entryPrice * 0.8;
-            const maxPrice = entryPrice * 1.2;
+            const minPrice = entryPrice * 0.5; // Widen range for low leverage liq prices
+            const maxPrice = entryPrice * 1.5;
             
             tpSlider.min = minPrice;
             tpSlider.max = maxPrice;
@@ -927,7 +686,11 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
             currentLeverage = parseInt(val);
             document.getElementById('leverage-val').innerText = `${currentLeverage}x`;
             document.getElementById('dash-leverage').innerText = `${currentLeverage}x`;
-            updateDashboard();
+            let liqPrice = updateDashboard();
+            if (isNaN(liqPrice)) liqPrice = 0;
+            
+            // Auto-set SL to Liq Price
+            updateSL(liqPrice, 'auto');
         }
 
         function setDirection(dir) {
@@ -971,6 +734,8 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
 
         function updateTP(val, source) {
             tpPrice = parseFloat(val);
+            if (isNaN(tpPrice)) return;
+            
             if (source === 'slider') {
                 document.getElementById('tp-input').value = tpPrice.toFixed(2);
             } else {
@@ -982,9 +747,15 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
 
         function updateSL(val, source) {
             slPrice = parseFloat(val);
+            if (isNaN(slPrice)) return;
+
             if (source === 'slider') {
                 document.getElementById('sl-input').value = slPrice.toFixed(2);
+            } else if (source === 'input') {
+                document.getElementById('sl-slider').value = slPrice;
             } else {
+                // Auto/External: Update both
+                document.getElementById('sl-input').value = slPrice.toFixed(2);
                 document.getElementById('sl-slider').value = slPrice;
             }
             if (slLine) slLine.applyOptions({ price: slPrice });
