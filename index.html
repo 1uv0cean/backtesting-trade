@@ -1013,7 +1013,7 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
             // Enable leverage
             document.getElementById('leverage-slider').disabled = false;
 
-            // Default sliders to +/- 5%
+            // Default sliders to +/- 10%
             const range = entryPrice * 0.1; // 10% range for sliders
             const tpSlider = document.getElementById('tp-slider');
             const slSlider = document.getElementById('sl-slider');
@@ -1027,13 +1027,13 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
             slSlider.min = minPrice;
             slSlider.max = maxPrice;
 
-            // Set default positions
+            // Set default positions (10% TP/SL)
             if (currentDirection === 'long') {
-                tpSlider.value = entryPrice * 1.05;
-                slSlider.value = entryPrice * 0.95;
+                tpSlider.value = entryPrice * 1.10;
+                slSlider.value = entryPrice * 0.90;
             } else {
-                tpSlider.value = entryPrice * 0.95;
-                slSlider.value = entryPrice * 1.05;
+                tpSlider.value = entryPrice * 0.90;
+                slSlider.value = entryPrice * 1.10;
             }
             
             updateTP(tpSlider.value, 'slider');
