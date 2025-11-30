@@ -1235,17 +1235,37 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
             document.getElementById('share-balance').innerText = '$' + Math.round(equity).toLocaleString();
             document.getElementById('share-leverage').innerText = currentLeverage + 'x';
             
-            // 3. Capture and Download
+            // 3. Capture and Share/Download
             const card = document.getElementById('share-card');
             
             html2canvas(card, {
                 backgroundColor: null,
                 scale: 2
             }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = 'the-100-candles-result.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
+                canvas.toBlob(async (blob) => {
+                    const file = new File([blob], 'the-100-candles-result.png', { type: 'image/png' });
+                    
+                    // Try Web Share API (Mobile Native Share)
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        try {
+                            await navigator.share({
+                                files: [file],
+                                title: 'The 100 Candles Result',
+                                text: `I made ${roiText} profit on The 100 Candles! Can you beat me? #The100Candles`
+                            });
+                            return; // Success, stop here
+                        } catch (err) {
+                            console.log("Web Share API failed or cancelled, falling back to download:", err);
+                        }
+                    }
+
+                    // Fallback: Direct Download (Desktop)
+                    const link = document.createElement('a');
+                    link.download = 'the-100-candles-result.png';
+                    link.href = URL.createObjectURL(blob);
+                    link.click();
+                    URL.revokeObjectURL(link.href);
+                }, 'image/png');
             }).catch(err => {
                 console.error("Share failed:", err);
                 alert("Could not generate image. Please try again.");
