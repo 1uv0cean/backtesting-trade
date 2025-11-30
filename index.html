@@ -1152,8 +1152,21 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
         function startGame() {
             if (isPlaying) return;
             isPlaying = true;
-            // Hide start button, show Live PnL
+            
+            // Auto-Focus: Collapse controls and hide start button
+            const controls = document.getElementById('controls-panel');
+            controls.classList.add('collapsed');
             document.getElementById('btn-start').style.display = 'none';
+            
+            // Trigger chart resize
+            setTimeout(() => {
+                const container = document.getElementById('chart-container');
+                if (chart && container) {
+                    chart.resize(container.clientWidth, container.clientHeight);
+                }
+            }, 310);
+
+            document.getElementById('btn-start').disabled = true;
             const pnlContainer = document.getElementById('live-pnl-container');
             const pnlValue = document.getElementById('live-pnl');
             pnlContainer.style.display = 'block';
@@ -1337,6 +1350,20 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
 
             document.getElementById('tp-slider').disabled = false;
             document.getElementById('sl-slider').disabled = false;
+            
+            // Auto-Focus: Expand controls and show start button
+            const controls = document.getElementById('controls-panel');
+            controls.classList.remove('collapsed');
+            document.getElementById('btn-start').style.display = 'block';
+            
+            // Trigger chart resize
+            setTimeout(() => {
+                const container = document.getElementById('chart-container');
+                if (chart && container) {
+                    chart.resize(container.clientWidth, container.clientHeight);
+                }
+            }, 310);
+
             updateDashboard();
             loadScenario();
         }
