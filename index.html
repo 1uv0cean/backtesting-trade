@@ -4,10 +4,6 @@
     <meta charset="UTF-8">
     <meta name="twitter:image" content="https://the100candles.com/share-card.png">
 
-    <!-- Google AdSense -->
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1427543231397985"
-     crossorigin="anonymous"></script>
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>The 100 Candles: The Backtester</title>
     <!-- FontAwesome -->
@@ -605,15 +601,19 @@
     <!-- Ad Modal (Bankruptcy) -->
     <div class="modal-overlay" id="ad-modal">
         <div class="modal">
-            <div class="result-icon">💔</div>
-            <div class="result-title" style="color: var(--accent-red)">BANKRUPT</div>
+            <div class="result-icon">💸</div>
+            <div class="result-title" style="color: var(--accent-red)">BANKRUPT!</div>
             <p class="result-desc">
-                You ran out of funds! Watch a short ad to recharge your balance to $10,000.
+                You ran out of funds! Sign up on Bybit to get a deposit bonus and trade for real.
             </p>
-            <div id="ad-progress-container" style="width: 100%; background: #333; height: 10px; border-radius: 5px; margin: 20px 0; display: none;">
-                <div id="ad-progress-bar" style="width: 0%; height: 100%; background: var(--accent-green); border-radius: 5px; transition: width 0.1s linear;"></div>
-            </div>
-            <button class="btn-cta" id="btn-watch-ad" onclick="watchAd()">📺 Watch Ad to Recharge</button>
+            
+            <a href="https://www.bybit.com/invite?ref=JAKO2W" target="_blank" class="btn-cta" onclick="enableClaim()">
+                Sign Up & Get Bonus
+            </a>
+            
+            <button class="btn-cta" id="btn-claim-reward" onclick="claimReward()" disabled style="background: #404040; color: #787b86; cursor: not-allowed;">
+                💰 Claim $10,000 Demo Funds
+            </button>
         </div>
     </div>
 
@@ -1279,7 +1279,7 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
                 if (currentBalance <= 1) {
                     // Show Ad Modal logic
                     const retryBtn = document.querySelector('.btn-retry');
-                    retryBtn.innerText = "💸 Bankrupt! Watch Ad to Revive";
+                    retryBtn.innerText = "💸 Bankrupt! Get Bonus to Revive";
                     retryBtn.onclick = () => {
                         document.getElementById('result-modal').classList.remove('visible');
                         document.getElementById('ad-modal').classList.add('visible');
@@ -1338,45 +1338,34 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
             loadScenario();
         }
 
-        // --- Ad Logic ---
-        function watchAd() {
-            const btn = document.getElementById('btn-watch-ad');
-            const barContainer = document.getElementById('ad-progress-container');
-            const bar = document.getElementById('ad-progress-bar');
+        // --- Referral / Bankruptcy Logic ---
+        function enableClaim() {
+            const btn = document.getElementById('btn-claim-reward');
+            btn.innerText = "Checking...";
             
-            btn.disabled = true;
-            btn.innerText = "Watching Ad... (5s)";
-            barContainer.style.display = 'block';
-            
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress += 2; // 50 steps * 100ms = 5000ms
-                bar.style.width = progress + '%';
-                
-                if (progress >= 100) {
-                    clearInterval(interval);
-                    btn.disabled = false;
-                    btn.innerText = "💰 Claim $10,000 Reward";
-                    btn.onclick = claimReward;
-                    btn.classList.add('pulse-profit'); // Add pulse effect
-                }
-            }, 100);
+            // Simulate checking for signup (just a delay)
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.style.background = "#ffd700";
+                btn.style.color = "#000";
+                btn.style.cursor = "pointer";
+                btn.innerText = "💰 Claim $10,000 Demo Funds";
+                btn.classList.add('pulse-profit');
+            }, 2000);
         }
 
         function claimReward() {
             currentBalance = 10000;
             updateDashboard(); // Saves to local storage
             
-            const btn = document.getElementById('btn-watch-ad');
-            const barContainer = document.getElementById('ad-progress-container');
-            const bar = document.getElementById('ad-progress-bar');
+            const btn = document.getElementById('btn-claim-reward');
             
-            // Reset Ad UI
-            btn.innerText = "📺 Watch Ad to Recharge";
-            btn.onclick = watchAd;
+            // Reset UI
+            btn.disabled = true;
+            btn.style.background = "#404040";
+            btn.style.color = "#787b86";
+            btn.style.cursor = "not-allowed";
             btn.classList.remove('pulse-profit');
-            barContainer.style.display = 'none';
-            bar.style.width = '0%';
             
             document.getElementById('ad-modal').classList.remove('visible');
             alert("Balance Recharged! Good luck!");
