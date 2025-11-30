@@ -1,0 +1,48 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Copy files via SCP
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "index.html"
+          target: "/home/${{ secrets.EC2_USER }}/"
+
+      - name: Execute deployment script via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # 1. Install Nginx if not exists
+            if ! command -v nginx &> /dev/null; then
+                echo "Installing Nginx..."
+                sudo apt update -y
+                sudo apt install nginx -y
+                sudo systemctl start nginx
+                sudo systemctl enable nginx
+            fi
+
+            # 2. Move file to web root
+            echo "Deploying index.html..."
+            sudo mv /home/${{ secrets.EC2_USER }}/index.html /var/www/html/index.html
+            
+            # 3. Set permissions
+            sudo chown www-data:www-data /var/www/html/index.html
+            sudo chmod 644 /var/www/html/index.html
+            
+            echo "Deployment Complete!"
