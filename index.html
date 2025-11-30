@@ -35,10 +35,11 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
-            height: 100vh;
+            height: 100dvh; /* Dynamic viewport height for mobile browsers */
             display: flex;
             flex-direction: column;
-            overflow: hidden;
+            overflow-y: auto; /* Allow vertical scroll */
+            overflow-x: hidden;
         }
 
         /* Header */
@@ -51,6 +52,7 @@
             align-items: center;
             height: 50px;
             z-index: 10;
+            flex-shrink: 0; /* Prevent header from shrinking */
         }
 
         .logo {
@@ -96,6 +98,7 @@
             position: relative;
             width: 100%;
             overflow: hidden;
+            min-height: 300px; /* Ensure chart doesn't collapse too much */
         }
 
         /* Controls Area */
