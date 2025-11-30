@@ -356,17 +356,72 @@
         .pulse-profit { animation: pulse-profit 0.4s ease-in-out; }
         .pulse-loss { animation: pulse-loss 0.4s ease-in-out; }
 
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            padding: 10px 15px;
+            background: var(--panel-bg);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.9rem;
+        }
+
+        .dash-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .dash-label {
+            font-size: 0.75rem;
+            color: #787b86;
+            margin-bottom: 2px;
+        }
+
+        .dash-value {
+            font-weight: 700;
+            font-family: monospace;
+            font-size: 1rem;
+        }
+
+        .dash-value.large { font-size: 1.2rem; }
+        .dash-value.profit { color: var(--accent-green); }
+        .dash-value.loss { color: var(--accent-red); }
+
+        .leverage-control {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
 
     <header>
         <div class="logo"><i class="fa-solid fa-chart-line"></i> Chart Master</div>
-        <div class="header-right">
-            <div class="balance-display" id="balance-display">$10,000</div>
-            <div class="scenario-info" id="scenario-title">Loading...</div>
-        </div>
+        <div class="scenario-info" id="scenario-title">Loading...</div>
     </header>
+
+    <div class="dashboard">
+        <div class="dash-item">
+            <span class="dash-label">Wallet Balance</span>
+            <span class="dash-value" id="dash-balance">$10,000</span>
+        </div>
+        <div class="dash-item" style="text-align: right;">
+            <span class="dash-label">Unrealized PnL (ROI)</span>
+            <span class="dash-value large" id="dash-pnl">$0 (0.00%)</span>
+        </div>
+        <div class="dash-item">
+            <span class="dash-label">Leverage</span>
+            <span class="dash-value" id="dash-leverage">10x</span>
+        </div>
+        <div class="dash-item" style="text-align: right;">
+            <span class="dash-label">Liq. Price</span>
+            <span class="dash-value" id="dash-liq" style="color: var(--accent-red)">-</span>
+        </div>
+    </div>
 
     <div class="tools-bar">
         <button class="btn-tool" id="btn-trendline" onclick="setTool('trendline')">
@@ -389,6 +444,15 @@
     <div class="toast" id="toast">Drag sliders to set TP/SL</div>
 
     <div class="controls">
+        <!-- Leverage Slider -->
+        <div class="leverage-control">
+            <div class="slider-header">
+                <span class="slider-label">Leverage</span>
+                <span class="slider-value" id="leverage-val">10x</span>
+            </div>
+            <input type="range" id="leverage-slider" min="1" max="100" step="1" value="10" oninput="updateLeverage(this.value)">
+        </div>
+
         <!-- Direction Selection -->
         <div class="trade-direction">
             <button class="btn-direction active long" onclick="setDirection('long')">
@@ -440,7 +504,7 @@
             <p class="result-desc" id="result-desc">
                 This was actually the 2021 Bull Run. Perfect entry!
             </p>
-            <a href="#" class="btn-cta" id="referral-link">Claim Bonus & Trade</a>
+            <a href="#" class="btn-cta" id="referral-link" target="_blank">Claim Bonus & Trade</a>
             <button class="btn-cta btn-retry" onclick="resetGame()">Try Next Scenario</button>
         </div>
     </div>
@@ -450,7 +514,7 @@
         // --- Configuration ---
         const REFERRAL_LINK = 'https://www.bybit.com/invite?ref=JAKO2W'; // Replace with actual link
         let currentBalance = 10000; // Persistent balance
-        const LEVERAGE = 10; // 10x leverage for excitement
+        let currentLeverage = 10;
 
         // --- Error Handling ---
         window.onerror = function(msg, url, lineNo, columnNo, error) {
@@ -828,6 +892,9 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
             document.getElementById('btn-start').innerText = "START TRADING";
             document.getElementById('result-modal').classList.remove('visible');
             
+            // Enable leverage
+            document.getElementById('leverage-slider').disabled = false;
+
             // Default sliders to +/- 5%
             const range = entryPrice * 0.1; // 10% range for sliders
             const tpSlider = document.getElementById('tp-slider');
@@ -853,6 +920,14 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
             
             updateTP(tpSlider.value, 'slider');
             updateSL(slSlider.value, 'slider');
+            updateDashboard();
+        }
+
+        function updateLeverage(val) {
+            currentLeverage = parseInt(val);
+            document.getElementById('leverage-val').innerText = `${currentLeverage}x`;
+            document.getElementById('dash-leverage').innerText = `${currentLeverage}x`;
+            updateDashboard();
         }
 
         function setDirection(dir) {
@@ -919,11 +994,11 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
         function updatePnL() {
             // Calculate PnL for TP
             const tpDiff = currentDirection === 'long' ? (tpPrice - entryPrice) : (entryPrice - tpPrice);
-            const tpPct = (tpDiff / entryPrice) * 100 * LEVERAGE;
+            const tpPct = (tpDiff / entryPrice) * 100 * currentLeverage;
             const tpAmt = (currentBalance * (tpPct / 100)).toFixed(0);
             
             const slDiff = currentDirection === 'long' ? (slPrice - entryPrice) : (entryPrice - slPrice);
-            const slPct = (slDiff / entryPrice) * 100 * LEVERAGE;
+            const slPct = (slDiff / entryPrice) * 100 * currentLeverage;
             const slAmt = (currentBalance * (slPct / 100)).toFixed(0);
 
             const tpEl = document.getElementById('tp-pnl');
@@ -934,6 +1009,24 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
 
             slEl.innerText = `${slAmt >= 0 ? '+' : ''}$${slAmt} (${slPct.toFixed(1)}%)`;
             slEl.className = `pnl-preview ${slAmt >= 0 ? 'profit' : 'loss'}`;
+        }
+
+        function updateDashboard() {
+            // Update Balance
+            document.getElementById('dash-balance').innerText = `$${Math.round(currentBalance).toLocaleString()}`;
+            
+            // Calculate Liq Price
+            let liqPrice = 0;
+            if (currentDirection === 'long') {
+                liqPrice = entryPrice * (1 - 1/currentLeverage);
+            } else {
+                liqPrice = entryPrice * (1 + 1/currentLeverage);
+            }
+            // Clamp liq price to 0
+            if (liqPrice < 0) liqPrice = 0;
+            
+            document.getElementById('dash-liq').innerText = `$${liqPrice.toFixed(2)}`;
+            return liqPrice;
         }
 
         // --- Game Logic ---
@@ -951,6 +1044,9 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
             // Disable controls
             document.getElementById('tp-slider').disabled = true;
             document.getElementById('sl-slider').disabled = true;
+            document.getElementById('leverage-slider').disabled = true;
+
+            const liqPrice = updateDashboard(); // Get current liq price
 
             animationInterval = setInterval(() => {
                 if (currentIndex >= futureData.length) {
@@ -965,12 +1061,17 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
                 // Update Live PnL
                 const currentPrice = candle.close;
                 const diff = currentDirection === 'long' ? (currentPrice - entryPrice) : (entryPrice - currentPrice);
-                const pnlPct = (diff / entryPrice) * 100 * LEVERAGE;
+                const pnlPct = (diff / entryPrice) * 100 * currentLeverage;
                 const pnlAmt = (currentBalance * (pnlPct / 100));
                 
                 pnlValue.innerText = `${pnlAmt >= 0 ? '+' : ''}$${pnlAmt.toFixed(0)}`;
                 pnlValue.className = `live-pnl-value ${pnlAmt >= 0 ? 'profit' : 'loss'}`;
                 
+                // Update Dashboard PnL
+                const dashPnl = document.getElementById('dash-pnl');
+                dashPnl.innerText = `${pnlAmt >= 0 ? '+' : ''}$${pnlAmt.toFixed(0)} (${pnlPct.toFixed(2)}%)`;
+                dashPnl.className = `dash-value large ${pnlAmt >= 0 ? 'profit' : 'loss'}`;
+
                 // Add pulse effect on significant moves (e.g. > 1% change from previous?)
                 // For now just pulse every update if profit/loss is significant
                 if (Math.abs(pnlPct) > 5) {
@@ -978,14 +1079,16 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
                     setTimeout(() => pnlValue.classList.remove('pulse-profit', 'pulse-loss'), 400);
                 }
 
-                // Check Win/Loss
+                // Check Win/Loss/Liquidation
                 const high = candle.high;
                 const low = candle.low;
 
                 if (currentDirection === 'long') {
+                    if (low <= liqPrice) { finishGame('liquidation'); return; }
                     if (low <= slPrice) { finishGame('loss'); return; }
                     if (high >= tpPrice) { finishGame('win'); return; }
                 } else {
+                    if (high >= liqPrice) { finishGame('liquidation'); return; }
                     if (high >= slPrice) { finishGame('loss'); return; }
                     if (low <= tpPrice) { finishGame('win'); return; }
                 }
@@ -1002,24 +1105,28 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
             if (result === 'win') {
                 // Calculate based on TP
                 const diff = Math.abs(tpPrice - entryPrice);
-                pnlPct = (diff / entryPrice) * 100 * LEVERAGE;
+                pnlPct = (diff / entryPrice) * 100 * currentLeverage;
                 pnl = currentBalance * (pnlPct / 100);
             } else if (result === 'loss') {
                 // Calculate based on SL
                 const diff = Math.abs(slPrice - entryPrice);
-                pnlPct = -(diff / entryPrice) * 100 * LEVERAGE; // Negative
+                pnlPct = -(diff / entryPrice) * 100 * currentLeverage; // Negative
                 pnl = currentBalance * (pnlPct / 100);
+            } else if (result === 'liquidation') {
+                pnlPct = -100;
+                pnl = -currentBalance; // Lose everything
             } else {
                 // Draw (end of data) - calculate based on last close
                 const lastClose = futureData[futureData.length - 1].close;
                 const diff = currentDirection === 'long' ? (lastClose - entryPrice) : (entryPrice - lastClose);
-                pnlPct = (diff / entryPrice) * 100 * LEVERAGE;
+                pnlPct = (diff / entryPrice) * 100 * currentLeverage;
                 pnl = currentBalance * (pnlPct / 100);
             }
 
             // Update Balance
             currentBalance += pnl;
-            updateBalanceDisplay();
+            if (currentBalance < 0) currentBalance = 0; // Prevent negative balance
+            updateDashboard(); // Update dashboard with new balance
 
             // Update Modal
             const modal = document.getElementById('result-modal');
@@ -1029,7 +1136,18 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
             const desc = document.getElementById('result-desc');
             const link = document.getElementById('referral-link');
 
-            if (pnl >= 0) {
+            if (result === 'liquidation') {
+                icon.innerText = "💀";
+                title.innerText = "LIQUIDATED";
+                title.style.color = "var(--accent-red)";
+                amount.style.color = "var(--accent-red)";
+                link.innerText = "Recharge & Try Again";
+                // If bankrupt, maybe give a reset button? For now just keep going with 0 (or reset to 10k if 0?)
+                if (currentBalance <= 1) {
+                    currentBalance = 10000; // Mercy reset
+                    setTimeout(() => alert("Bankrupt! Resetting balance to $10,000"), 500);
+                }
+            } else if (pnl >= 0) {
                 icon.innerText = "🚀";
                 title.innerText = "PROFIT!";
                 title.style.color = "var(--accent-green)";
@@ -1054,12 +1172,8 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
             document.getElementById('result-modal').classList.remove('visible');
             document.getElementById('tp-slider').disabled = false;
             document.getElementById('sl-slider').disabled = false;
-            updateBalanceDisplay();
+            updateDashboard();
             loadScenario();
-        }
-
-        function updateBalanceDisplay() {
-            document.getElementById('balance-display').innerText = `$${Math.round(currentBalance).toLocaleString()}`;
         }
 
     </script>
