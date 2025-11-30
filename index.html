@@ -112,6 +112,63 @@
             gap: 15px;
             z-index: 20;
             padding-bottom: max(15px, env(safe-area-inset-bottom));
+            transition: all 0.3s ease;
+        }
+
+        .controls.collapsed {
+            padding: 10px 15px;
+            gap: 0;
+        }
+
+        .controls-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            padding-bottom: 0;
+        }
+
+        .controls-title {
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: #787b86;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #controls-toggle-icon {
+            color: #787b86;
+            transition: transform 0.3s;
+        }
+
+        .controls.collapsed #controls-toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .controls-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            transition: opacity 0.2s, max-height 0.3s;
+            max-height: 500px; /* Approximate max height */
+            opacity: 1;
+            overflow: hidden;
+        }
+
+        .controls.collapsed .controls-content {
+            max-height: 0;
+            opacity: 0;
+            margin: 0;
+            padding: 0;
+        }
+
+        .leverage-control {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 10px;
         }
 
         .trade-direction {
@@ -472,46 +529,53 @@
     <div id="chart-container"></div>
     <div class="toast" id="toast">Drag sliders to set TP/SL</div>
 
-    <div class="controls">
-        <!-- Leverage Slider -->
-        <div class="leverage-control">
-            <div class="slider-header">
-                <span class="slider-label">Leverage</span>
-                <span class="slider-value" id="leverage-val">10x</span>
-            </div>
-            <input type="range" id="leverage-slider" min="1" max="100" step="1" value="10" oninput="updateLeverage(this.value)">
+    <div class="controls" id="controls-panel">
+        <div class="controls-header" onclick="toggleControls()">
+            <span class="controls-title">Trade Settings</span>
+            <i class="fa-solid fa-chevron-down" id="controls-toggle-icon"></i>
         </div>
-
-        <!-- Direction Selection -->
-        <div class="trade-direction">
-            <button class="btn-direction active long" onclick="setDirection('long')">
-                <i class="fa-solid fa-arrow-trend-up"></i> LONG
-            </button>
-            <button class="btn-direction short" onclick="setDirection('short')">
-                <i class="fa-solid fa-arrow-trend-down"></i> SHORT
-            </button>
-        </div>
-
-        <!-- TP Slider -->
-        <div class="slider-group">
-            <div class="slider-header">
-                <span class="slider-label" style="color: var(--accent-green)">Take Profit</span>
-                <span class="pnl-preview profit" id="tp-pnl">+$0 (0%)</span>
+        
+        <div class="controls-content" id="controls-content">
+            <!-- Leverage Slider -->
+            <div class="leverage-control">
+                <div class="slider-header">
+                    <span class="slider-label">Leverage</span>
+                    <span class="slider-value" id="leverage-val">10x</span>
+                </div>
+                <input type="range" id="leverage-slider" min="1" max="100" step="1" value="10" oninput="updateLeverage(this.value)">
             </div>
-            <div class="input-group">
-                <input type="range" id="tp-slider" min="0" max="100" step="0.1" oninput="updateTP(this.value, 'slider')">
-                <input type="number" id="tp-input" class="price-input" oninput="updateTP(this.value, 'input')">
-            </div>
-        </div>
 
-        <div class="slider-group">
-            <div class="slider-header">
-                <span class="slider-label" style="color: var(--accent-red)">Stop Loss</span>
-                <span class="pnl-preview loss" id="sl-pnl">-$0 (0%)</span>
+            <!-- Direction Selection -->
+            <div class="trade-direction">
+                <button class="btn-direction active long" onclick="setDirection('long')">
+                    <i class="fa-solid fa-arrow-trend-up"></i> LONG
+                </button>
+                <button class="btn-direction short" onclick="setDirection('short')">
+                    <i class="fa-solid fa-arrow-trend-down"></i> SHORT
+                </button>
             </div>
-            <div class="input-group">
-                <input type="range" id="sl-slider" min="0" max="100" step="0.1" oninput="updateSL(this.value, 'slider')">
-                <input type="number" id="sl-input" class="price-input" oninput="updateSL(this.value, 'input')">
+
+            <!-- TP Slider -->
+            <div class="slider-group">
+                <div class="slider-header">
+                    <span class="slider-label" style="color: var(--accent-green)">Take Profit</span>
+                    <span class="pnl-preview profit" id="tp-pnl">+$0 (0%)</span>
+                </div>
+                <div class="input-group">
+                    <input type="range" id="tp-slider" min="0" max="100" step="0.1" oninput="updateTP(this.value, 'slider')">
+                    <input type="number" id="tp-input" class="price-input" oninput="updateTP(this.value, 'input')">
+                </div>
+            </div>
+
+            <div class="slider-group">
+                <div class="slider-header">
+                    <span class="slider-label" style="color: var(--accent-red)">Stop Loss</span>
+                    <span class="pnl-preview loss" id="sl-pnl">-$0 (0%)</span>
+                </div>
+                <div class="input-group">
+                    <input type="range" id="sl-slider" min="0" max="100" step="0.1" oninput="updateSL(this.value, 'slider')">
+                    <input type="number" id="sl-input" class="price-input" oninput="updateSL(this.value, 'input')">
+                </div>
             </div>
         </div>
 
@@ -1369,6 +1433,19 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
                 console.error("Share failed:", err);
                 alert("Could not generate image. Please try again.");
             });
+        }
+
+        function toggleControls() {
+            const controls = document.getElementById('controls-panel');
+            controls.classList.toggle('collapsed');
+            
+            // Trigger chart resize after transition (300ms)
+            setTimeout(() => {
+                const container = document.getElementById('chart-container');
+                if (chart && container) {
+                    chart.resize(container.clientWidth, container.clientHeight);
+                }
+            }, 310);
         }
 
     </script>
