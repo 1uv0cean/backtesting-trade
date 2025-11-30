@@ -162,11 +162,13 @@
         input[type=range] {
             width: 100%;
             -webkit-appearance: none;
+            appearance: none;
             background: transparent;
         }
 
         input[type=range]::-webkit-slider-thumb {
             -webkit-appearance: none;
+            appearance: none;
             height: 20px;
             width: 20px;
             border-radius: 50%;
@@ -402,6 +404,17 @@
             text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
         }
 
+        .btn-icon-share {
+            background: none;
+            border: none;
+            color: #787b86;
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 0;
+            transition: color 0.2s;
+        }
+        .btn-icon-share:hover { color: #2962ff; }
+
         .leverage-control {
             display: flex;
             flex-direction: column;
@@ -428,7 +441,12 @@
             <span class="dash-value" id="dash-balance">$10,000</span>
         </div>
         <div class="dash-item" style="text-align: right;">
-            <span class="dash-label">Unrealized PnL (ROI)</span>
+            <div style="display: flex; align-items: center; gap: 5px; justify-content: flex-end;">
+                <span class="dash-label">Total Profit (ROI)</span>
+                <button class="btn-icon-share" onclick="shareResult()" title="Share PnL">
+                    <i class="fas fa-share-alt"></i>
+                </button>
+            </div>
             <span class="dash-value large" id="dash-pnl">$0 (0.00%)</span>
         </div>
         <div class="dash-item">
@@ -517,11 +535,192 @@
     
     <!-- Driver.js -->
     <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
+    <!-- html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        /* Share Card Styles */
+        #share-card {
+            position: fixed;
+            top: -9999px;
+            left: -9999px;
+            width: 400px;
+            height: 600px;
+            background: linear-gradient(135deg, #000000 0%, #1a1a1a 100%);
+            border: 4px solid #ffd700;
+            border-radius: 20px;
+            padding: 40px 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            color: #d1d4dc;
+            font-family: 'Roboto', sans-serif;
+            z-index: 10000;
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.2);
+        }
+
+        .share-header {
+            text-align: center;
+            width: 100%;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 20px;
+        }
+
+        .share-logo {
+            font-size: 24px;
+            font-weight: 900;
+            color: #fff;
+            letter-spacing: 2px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .share-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .share-icon {
+            font-size: 80px;
+            color: #ffd700;
+            margin-bottom: 20px;
+            filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.4));
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+
+        .share-label {
+            font-size: 16px;
+            color: #787b86;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .share-roi-value {
+            font-size: 64px;
+            font-weight: 900;
+            color: #ffd700;
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+            line-height: 1;
+            margin-bottom: 10px;
+        }
+
+        .share-pnl-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 30px;
+        }
+        .share-pnl-value.profit { color: #26a69a; }
+        .share-pnl-value.loss { color: #ef5350; }
+
+        .share-stats-row {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px;
+        }
+
+        .share-stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .share-stat-label {
+            font-size: 12px;
+            color: #787b86;
+            margin-bottom: 4px;
+        }
+
+        .share-stat-val {
+            font-size: 16px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .share-footer {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #555;
+            width: 100%;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 15px;
+        }
+
+        .btn-share {
+            background-color: #2962ff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: background-color 0.2s;
+        }
+
+        .btn-share:hover { background-color: #1e54eb; }
+    </style>
+
+    <!-- Hidden Share Card -->
+    <!-- Hidden Share Card -->
+    <div id="share-card">
+        <div class="share-header">
+            <div class="share-logo"><i class="fas fa-chart-line"></i> Chart Master</div>
+            <div style="font-size: 12px; color: #787b86; letter-spacing: 2px;">TRADING REPORT</div>
+        </div>
+        
+        <div class="share-main">
+            <div class="share-icon">🚀</div>
+            <div class="share-label">TOTAL ACCOUNT GROWTH</div>
+            <div id="share-roi" class="share-roi-value">+0.0%</div>
+            <div id="share-pnl" class="share-pnl-value">$0</div>
+        </div>
+
+        <div class="share-stats-row">
+            <div class="share-stat-item">
+                <span class="share-stat-label">BALANCE</span>
+                <span id="share-balance" class="share-stat-val">$10,000</span>
+            </div>
+            <div class="share-stat-item">
+                <span class="share-stat-label">LEVERAGE</span>
+                <span id="share-leverage" class="share-stat-val">10x</span>
+            </div>
+        </div>
+
+        <div class="share-footer">
+            <p>Can you beat my returns?</p>
+            <p style="margin-top: 5px; font-weight: bold; color: #fff;">chart-master.com</p>
+        </div>
+    </div>
     
     <script>
         // --- Configuration ---
         const REFERRAL_LINK = 'https://www.bybit.com/invite?ref=JAKO2W'; // Replace with actual link
-        let currentBalance = 10000; // Persistent balance
+        const INITIAL_BALANCE = 10000;
+        let currentBalance = INITIAL_BALANCE; // Persistent balance
+        let currentTradePnL = 0; // Live PnL of current trade
         let currentLeverage = 10;
 
         // --- Error Handling ---
@@ -851,6 +1050,13 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
             return liqPrice;
         }
 
+        function getAccountStats() {
+            const equity = currentBalance + currentTradePnL;
+            const totalProfit = equity - INITIAL_BALANCE;
+            const totalRoi = (totalProfit / INITIAL_BALANCE) * 100;
+            return { equity, totalProfit, totalRoi };
+        }
+
         // --- Game Logic ---
         function startGame() {
             if (isPlaying) return;
@@ -880,47 +1086,53 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
                 candleSeries.update(candle);
                 currentIndex++;
 
-                // Update Live PnL
                 const currentPrice = candle.close;
-                const diff = currentDirection === 'long' ? (currentPrice - entryPrice) : (entryPrice - currentPrice);
+                const high = candle.high;
+                const low = candle.low;
+                
+                let exitPrice = currentPrice;
+                let finishType = null;
+
+                // Check Exits
+                if (currentDirection === 'long') {
+                    // Check SL first if it's safer than Liq Price
+                    if (slPrice > liqPrice && low <= slPrice) { finishType = 'loss'; exitPrice = slPrice; }
+                    else if (low <= liqPrice) { finishType = 'liquidation'; exitPrice = liqPrice; }
+                    else if (low <= slPrice) { finishType = 'loss'; exitPrice = slPrice; }
+                    else if (high >= tpPrice) { finishType = 'win'; exitPrice = tpPrice; }
+                } else {
+                    // Short
+                    // Check SL first if it's safer than Liq Price
+                    if (slPrice < liqPrice && high >= slPrice) { finishType = 'loss'; exitPrice = slPrice; }
+                    else if (high >= liqPrice) { finishType = 'liquidation'; exitPrice = liqPrice; }
+                    else if (high >= slPrice) { finishType = 'loss'; exitPrice = slPrice; }
+                    else if (low <= tpPrice) { finishType = 'win'; exitPrice = tpPrice; }
+                }
+
+                // Update Live PnL (using exitPrice if finishing, else currentPrice)
+                const diff = currentDirection === 'long' ? (exitPrice - entryPrice) : (entryPrice - exitPrice);
                 const pnlPct = (diff / entryPrice) * 100 * currentLeverage;
                 const pnlAmt = (currentBalance * (pnlPct / 100));
-                
+                currentTradePnL = pnlAmt; // Update global live PnL
+        
                 pnlValue.innerText = `${pnlAmt >= 0 ? '+' : ''}$${pnlAmt.toFixed(0)}`;
                 pnlValue.className = `live-pnl-value ${pnlAmt >= 0 ? 'profit' : 'loss'}`;
                 
-                // Update Dashboard PnL
+                // Update Dashboard PnL (Show Cumulative ROI)
+                const stats = getAccountStats();
                 const dashPnl = document.getElementById('dash-pnl');
-                dashPnl.innerText = `${pnlAmt >= 0 ? '+' : ''}$${pnlAmt.toFixed(0)} (${pnlPct.toFixed(2)}%)`;
-                dashPnl.className = `dash-value large ${pnlAmt >= 0 ? 'profit' : 'loss'}`;
+                dashPnl.innerText = `${stats.totalProfit >= 0 ? '+' : '-'}$${Math.abs(stats.totalProfit).toLocaleString()} (${stats.totalRoi >= 0 ? '+' : ''}${stats.totalRoi.toFixed(2)}%)`;
+                dashPnl.className = `dash-value large ${stats.totalProfit >= 0 ? 'profit' : 'loss'}`;
 
-                // Add pulse effect on significant moves (e.g. > 1% change from previous?)
-                // For now just pulse every update if profit/loss is significant
+                // Add pulse effect on significant moves
                 if (Math.abs(pnlPct) > 5) {
                     pnlValue.classList.add(pnlAmt >= 0 ? 'pulse-profit' : 'pulse-loss');
                     setTimeout(() => pnlValue.classList.remove('pulse-profit', 'pulse-loss'), 400);
                 }
 
-                // Check Win/Loss/Liquidation
-                const high = candle.high;
-                const low = candle.low;
-
-                if (currentDirection === 'long') {
-                    // Check SL first if it's safer than Liq Price
-                    if (slPrice > liqPrice && low <= slPrice) { finishGame('loss'); return; }
-                    
-                    if (low <= liqPrice) { finishGame('liquidation'); return; }
-                    if (low <= slPrice) { finishGame('loss'); return; } // Fallback if SL was worse than Liq (though Liq would hit first usually)
-                    
-                    if (high >= tpPrice) { finishGame('win'); return; }
-                } else {
-                    // Check SL first if it's safer than Liq Price
-                    if (slPrice < liqPrice && high >= slPrice) { finishGame('loss'); return; }
-                    
-                    if (high >= liqPrice) { finishGame('liquidation'); return; }
-                    if (high >= slPrice) { finishGame('loss'); return; }
-                    
-                    if (low <= tpPrice) { finishGame('win'); return; }
+                if (finishType) {
+                    finishGame(finishType);
+                    return;
                 }
 
             }, 500); // 500ms per candle (Slower)
@@ -955,6 +1167,7 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
 
             // Update Balance
             currentBalance += pnl;
+            currentTradePnL = 0; // Reset live PnL
             if (currentBalance < 0) currentBalance = 0; // Prevent negative balance
             updateDashboard(); // Update dashboard with new balance
 
@@ -991,8 +1204,9 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
                 link.innerText = "Learn Risk Management (Sign Up)";
             }
 
-            amount.innerText = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(0)} (${pnlPct.toFixed(1)}%)`;
-            desc.innerText = `${currentScenario.description}\n\nEntry: $${entryPrice.toFixed(2)}\nExit: $${(result === 'win' ? tpPrice : (result === 'loss' ? slPrice : futureData[futureData.length-1].close)).toFixed(2)}`;
+            // Update Modal with Trade Stats (User Request: "Profit!" shows trade result only)
+            amount.innerText = (pnl >= 0 ? '+' : '') + '$' + pnl.toFixed(0) + ' (' + pnlPct.toFixed(1) + '%)';
+            desc.innerText = currentScenario.description + '\n\nEntry: $' + entryPrice.toFixed(2) + '\nExit: $' + (result === 'win' ? tpPrice : (result === 'loss' ? slPrice : futureData[futureData.length-1].close)).toFixed(2);
             
             link.href = REFERRAL_LINK;
             modal.classList.add('visible');
@@ -1004,6 +1218,38 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
             document.getElementById('sl-slider').disabled = false;
             updateDashboard();
             loadScenario();
+        }
+
+        function shareResult() {
+            // 1. Calculate Stats using unified logic
+            const { equity, totalProfit, totalRoi } = getAccountStats();
+            
+            const roiText = (totalRoi >= 0 ? '+' : '') + totalRoi.toFixed(1) + '%';
+            const pnlText = (totalProfit >= 0 ? '+' : '-') + '$' + Math.abs(totalProfit).toLocaleString();
+            
+            // 2. Update Share Card
+            document.getElementById('share-roi').innerText = roiText;
+            document.getElementById('share-pnl').innerText = pnlText;
+            document.getElementById('share-pnl').className = `share-pnl-value ${totalProfit >= 0 ? 'profit' : 'loss'}`;
+            
+            document.getElementById('share-balance').innerText = '$' + Math.round(equity).toLocaleString();
+            document.getElementById('share-leverage').innerText = currentLeverage + 'x';
+            
+            // 3. Capture and Download
+            const card = document.getElementById('share-card');
+            
+            html2canvas(card, {
+                backgroundColor: null,
+                scale: 2
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'chart-master-result.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }).catch(err => {
+                console.error("Share failed:", err);
+                alert("Could not generate image. Please try again.");
+            });
         }
 
     </script>
