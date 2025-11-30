@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Chart Master: The Backtester</title>
+    <title>The 100 Candles: The Backtester</title>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Driver.js for Tutorial -->
@@ -428,7 +428,7 @@
 <body>
 
     <header>
-        <div class="logo"><i class="fa-solid fa-chart-line"></i> Chart Master</div>
+        <div class="logo"><i class="fa-solid fa-chart-line"></i> The 100 Candles</div>
         <div style="display: flex; align-items: center;">
             <div class="scenario-info" id="scenario-title">Loading...</div>
             <button class="btn-help" onclick="startTutorial()" title="Help"><i class="fa-solid fa-circle-question"></i></button>
@@ -687,7 +687,7 @@
     <!-- Hidden Share Card -->
     <div id="share-card">
         <div class="share-header">
-            <div class="share-logo"><i class="fas fa-chart-line"></i> Chart Master</div>
+            <div class="share-logo"><i class="fas fa-chart-line"></i> The 100 Candles</div>
             <div style="font-size: 12px; color: #787b86; letter-spacing: 2px;">TRADING REPORT</div>
         </div>
         
@@ -711,7 +711,7 @@
 
         <div class="share-footer">
             <p>Can you beat my returns?</p>
-            <p style="margin-top: 5px; font-weight: bold; color: #fff;">chart-master.com</p>
+            <p style="margin-top: 5px; font-weight: bold; color: #fff;">the100candles.com</p>
         </div>
     </div>
     
@@ -753,7 +753,7 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
             const driverObj = driver({
                 showProgress: true,
                 steps: [
-                    { element: '.logo', popover: { title: 'Welcome to Chart Master', description: 'Let\'s take a quick tour of the trading interface.' } },
+                    { element: '.logo', popover: { title: 'Welcome to The 100 Candles', description: 'Let\'s take a quick tour of the trading interface.' } },
                     { element: '#dash-balance', popover: { title: 'Wallet Balance', description: 'This is your total account balance. It persists across games!' } },
                     { element: '#dash-pnl', popover: { title: 'Unrealized PnL', description: 'Track your current trade\'s Profit or Loss in real-time here.' } },
                     { element: '.leverage-control', popover: { title: 'Leverage', description: 'Adjust your leverage up to 100x. Higher leverage means higher risk of liquidation!' } },
@@ -1243,7 +1243,7 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
                 scale: 2
             }).then(canvas => {
                 const link = document.createElement('a');
-                link.download = 'chart-master-result.png';
+                link.download = 'the-100-candles-result.png';
                 link.href = canvas.toDataURL('image/png');
                 link.click();
             }).catch(err => {
