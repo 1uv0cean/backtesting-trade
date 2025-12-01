@@ -949,9 +949,11 @@ const historicalData = [{"time": 1678147200, "open": 22409.41, "high": 22557.91,
                     { element: '.logo', popover: { title: 'Welcome to The 100 Candles', description: 'Let\'s take a quick tour of the trading interface.' } },
                     { element: '#dash-balance', popover: { title: 'Wallet Balance', description: 'This is your total account balance. It persists across games!' } },
                     { element: '#dash-pnl', popover: { title: 'Unrealized PnL', description: 'Track your current trade\'s Profit or Loss in real-time here.' } },
+                    { element: '#btn-load-context', popover: { title: 'Load More History', description: 'Click here to view more historical price data before your entry point. Useful for analyzing trends!' } },
                     { element: '.leverage-control', popover: { title: 'Leverage', description: 'Adjust your leverage up to 100x. Higher leverage means higher risk of liquidation!' } },
                     { element: '.controls', popover: { title: 'Trade Controls', description: 'Set your Take Profit (TP) and Stop Loss (SL) before entering a trade.' } },
-                    { element: '#btn-start', popover: { title: 'Start Trading', description: 'Click here to begin the simulation. Good luck!' } },
+                    { element: '#btn-skip-candle', popover: { title: 'Next Candle', description: 'Skip forward one candle to wait for a better entry point. Your entry price updates with each skip!' } },
+                    { element: '#btn-start', popover: { title: 'Start Trading', description: 'Click here to begin the simulation. Once started, this becomes a CLOSE POSITION button for manual exits!' } },
                 ]
             });
 
