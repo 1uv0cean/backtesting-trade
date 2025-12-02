@@ -907,10 +907,11 @@
         <div class="result-title" id="result-title">WIN</div>
         <div class="result-amount" id="result-amount">+$1,200</div>
         <p class="result-desc" id="result-desc">
-          This was actually the 2021 Bull Run. Perfect entry!
+          You're in the top 5% of traders! With these skills, you can start
+          making profits right now.
         </p>
         <a href="#" class="btn-cta" id="referral-link" target="_blank"
-          >Claim Bonus & Trade</a
+          >Start Real Trading</a
         >
         <button class="btn-cta btn-retry" onclick="resetGame()">
           Try Next Scenario
@@ -926,8 +927,8 @@
           BANKRUPT!
         </div>
         <p class="result-desc">
-          You ran out of funds! Sign up on Bybit to get a deposit bonus and
-          trade for real.
+          In real trading, you would have lost $10,000. Fortunately, this was
+          just practice. Get a $30,000 exchange bonus and recover risk-free.
         </p>
 
         <a
@@ -936,7 +937,7 @@
           class="btn-cta"
           onclick="enableClaim()"
         >
-          Sign Up & Get Bonus
+          Get Free Airdrop
         </a>
 
         <button
@@ -9132,7 +9133,7 @@
           title.innerText = "PROFIT!";
           title.style.color = "var(--accent-green)";
           amount.style.color = "var(--accent-green)";
-          link.innerText = "Trade Like a Pro (Sign Up)";
+          link.innerText = "Start Real Trading";
         } else if (pnl < 0) {
           // Sound: Loss
           playLossSound();
@@ -9152,17 +9153,21 @@
           " (" +
           pnlPct.toFixed(1) +
           "%)";
-        desc.innerText =
-          currentScenario.description +
-          "\n\nEntry: $" +
-          entryPrice.toFixed(2) +
-          "\nExit: $" +
-          (result === "win"
-            ? tpPrice
-            : result === "loss"
-            ? slPrice
-            : futureData[futureData.length - 1].close
-          ).toFixed(2);
+        // Update description based on result
+        if (result === "win") {
+          desc.innerText =
+            "You're in the top 5% of traders! With these skills, you can start making profits right now.";
+        } else {
+          desc.innerText =
+            currentScenario.description +
+            "\n\nEntry: $" +
+            entryPrice.toFixed(2) +
+            "\nExit: $" +
+            (result === "loss"
+              ? slPrice
+              : futureData[futureData.length - 1].close
+            ).toFixed(2);
+        }
 
         link.href = REFERRAL_LINK;
         modal.classList.add("visible");
