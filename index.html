@@ -1305,9 +1305,14 @@
       const REFERRAL_LINK = "https://www.bybit.com/invite?ref=JAKO2W"; // Replace with actual link
       const INITIAL_BALANCE = 10000;
       // Persistence: Load from local storage or default
+      // Check if value exists in localStorage first (to handle 0 balance correctly)
+      const savedBalance = localStorage.getItem("chartMasterBalance");
       let currentBalance =
-        parseFloat(localStorage.getItem("chartMasterBalance")) ||
-        INITIAL_BALANCE;
+        savedBalance !== null ? parseFloat(savedBalance) : INITIAL_BALANCE;
+      // Ensure balance is a valid number
+      if (isNaN(currentBalance) || currentBalance < 0) {
+        currentBalance = INITIAL_BALANCE;
+      }
       let currentTradePnL = 0; // Live PnL of current trade
       let currentLeverage = 10;
 
