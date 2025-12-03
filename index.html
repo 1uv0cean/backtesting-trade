@@ -9245,6 +9245,9 @@
         currentTradePnL = 0;
         if (currentBalance < 0) currentBalance = 0;
 
+        // Save balance to localStorage immediately when game ends
+        localStorage.setItem("chartMasterBalance", currentBalance);
+
         // Reset playing state before updating dashboard (so button can update)
         isPlaying = false;
         updateDashboard();
@@ -9480,6 +9483,10 @@
         currentBalance += pnl;
         currentTradePnL = 0; // Reset live PnL
         if (currentBalance < 0) currentBalance = 0; // Prevent negative balance
+
+        // Save balance to localStorage immediately when game ends
+        localStorage.setItem("chartMasterBalance", currentBalance);
+
         updateDashboard(); // Update dashboard with new balance
 
         // Update Modal
