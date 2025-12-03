@@ -1334,6 +1334,11 @@
       let futureData = [];
       let currentIndex = 0;
 
+      // Drag state for TP/SL lines
+      let isDragging = false;
+      let draggedLine = null; // 'tp' or 'sl'
+      const DRAG_THRESHOLD = 15; // pixels - increased for easier grabbing
+
       // Load Context variables
       let contextStartIndex = 0;
       let availableContextCandles = 0;
@@ -8626,6 +8631,135 @@
         window.addEventListener("resize", () => {
           chart.resize(container.clientWidth, container.clientHeight);
         });
+
+        // Add drag functionality for TP/SL lines
+        setupLineDragging(container);
+      }
+
+      // Helper function to get current price
+      function getCurrentPrice() {
+        if (isPlaying && futureData.length > 0 && currentIndex > 0) {
+          // During trading, use the last updated candle
+          const lastCandle = futureData[currentIndex - 1];
+          return lastCandle ? lastCandle.close : entryPrice;
+        } else {
+          // Before trading starts, use entry price
+          const data = candleSeries.data();
+          if (data && data.length > 0) {
+            return data[data.length - 1].close;
+          }
+          return entryPrice;
+        }
+      }
+
+      // Convert Y coordinate (clientY) to price
+      function yToPrice(clientY) {
+        const container = document.getElementById("chart-container");
+        const rect = container.getBoundingClientRect();
+        const y = clientY - rect.top;
+        // Use series method instead of priceScale
+        const price = candleSeries.coordinateToPrice(y);
+        return price;
+      }
+
+      // Convert price to Y coordinate (clientY)
+      function priceToY(price) {
+        const container = document.getElementById("chart-container");
+        const rect = container.getBoundingClientRect();
+        // Use series method instead of priceScale
+        const y = candleSeries.priceToCoordinate(price);
+        return y !== null ? y + rect.top : null;
+      }
+
+      // Setup line dragging
+      function setupLineDragging(container) {
+        let startY = 0;
+        let startPrice = 0;
+
+        container.addEventListener("mousedown", (e) => {
+          if (isPlaying) return; // Don't allow dragging during trading
+
+          const y = e.clientY;
+
+          // Check if click is near TP line
+          const tpY = priceToY(tpPrice);
+          if (tpY === null) return;
+          const tpDistance = Math.abs(y - tpY);
+
+          // Check if click is near SL line
+          const slY = priceToY(slPrice);
+          if (slY === null) return;
+          const slDistance = Math.abs(y - slY);
+
+          // Determine which line is closer
+          if (tpDistance < DRAG_THRESHOLD && tpDistance <= slDistance) {
+            isDragging = true;
+            draggedLine = "tp";
+            startY = y;
+            startPrice = tpPrice;
+            container.style.cursor = "ns-resize";
+            e.preventDefault();
+          } else if (slDistance < DRAG_THRESHOLD) {
+            isDragging = true;
+            draggedLine = "sl";
+            startY = y;
+            startPrice = slPrice;
+            container.style.cursor = "ns-resize";
+            e.preventDefault();
+          }
+        });
+
+        container.addEventListener("mousemove", (e) => {
+          if (!isDragging) {
+            // Show cursor when hovering near lines
+            if (isPlaying) return;
+
+            const y = e.clientY;
+            const tpY = priceToY(tpPrice);
+            const slY = priceToY(slPrice);
+            if (tpY === null || slY === null) {
+              container.style.cursor = "";
+              return;
+            }
+            const tpDistance = Math.abs(y - tpY);
+            const slDistance = Math.abs(y - slY);
+
+            if (tpDistance < DRAG_THRESHOLD || slDistance < DRAG_THRESHOLD) {
+              container.style.cursor = "ns-resize";
+            } else {
+              container.style.cursor = "";
+            }
+            return;
+          }
+
+          const y = e.clientY;
+          const newPrice = yToPrice(y);
+          if (newPrice === null) return;
+
+          if (draggedLine === "tp") {
+            updateTP(newPrice, "drag");
+          } else if (draggedLine === "sl") {
+            updateSL(newPrice, "drag");
+          }
+
+          e.preventDefault();
+        });
+
+        container.addEventListener("mouseup", (e) => {
+          if (isDragging) {
+            isDragging = false;
+            draggedLine = null;
+            container.style.cursor = "";
+          }
+        });
+
+        container.addEventListener("mouseleave", (e) => {
+          if (isDragging) {
+            isDragging = false;
+            draggedLine = null;
+            container.style.cursor = "";
+          }
+        });
       }
 
       function loadScenario() {
@@ -8786,9 +8920,21 @@
         resetControls();
       }
 
+      // Calculate percentage difference from current price
+      function getPriceDiffPercent(linePrice) {
+        if (!linePrice || isNaN(linePrice)) return 0;
+        const currentPrice = getCurrentPrice();
+        if (!currentPrice || currentPrice === 0) return 0;
+        const diff = ((linePrice - currentPrice) / currentPrice) * 100;
+        return isNaN(diff) ? 0 : diff;
+      }
+
       function createTPSLLines() {
         if (tpLine) candleSeries.removePriceLine(tpLine);
         if (slLine) candleSeries.removePriceLine(slLine);
+
+        const tpPct = getPriceDiffPercent(tpPrice);
+        const tpTitle = `TP ${tpPct >= 0 ? "+" : ""}${tpPct.toFixed(2)}%`;
 
         tpLine = candleSeries.createPriceLine({
           price: tpPrice,
@@ -8796,8 +8942,11 @@
           lineWidth: 2,
           lineStyle: LightweightCharts.LineStyle.Dashed,
           axisLabelVisible: true,
-          title: "TP",
+          title: tpTitle,
         });
+
+        const slPct = getPriceDiffPercent(slPrice);
+        const slTitle = `SL ${slPct >= 0 ? "+" : ""}${slPct.toFixed(2)}%`;
 
         slLine = candleSeries.createPriceLine({
           price: slPrice,
@@ -8805,7 +8954,7 @@
           lineWidth: 2,
           lineStyle: LightweightCharts.LineStyle.Dashed,
           axisLabelVisible: true,
-          title: "SL",
+          title: slTitle,
         });
       }
 
@@ -8815,10 +8964,20 @@
 
         if (source === "slider") {
           document.getElementById("tp-input").value = tpPrice.toFixed(2);
+        } else if (source === "drag") {
+          // Update both slider and input when dragging
+          document.getElementById("tp-input").value = tpPrice.toFixed(2);
+          document.getElementById("tp-slider").value = tpPrice;
         } else {
           document.getElementById("tp-slider").value = tpPrice;
         }
-        if (tpLine) tpLine.applyOptions({ price: tpPrice });
+
+        // Update line with percentage in title
+        if (tpLine) {
+          const tpPct = getPriceDiffPercent(tpPrice);
+          const tpTitle = `TP ${tpPct >= 0 ? "+" : ""}${tpPct.toFixed(2)}%`;
+          tpLine.applyOptions({ price: tpPrice, title: tpTitle });
+        }
         updatePnL();
       }
 
@@ -8830,12 +8989,22 @@
           document.getElementById("sl-input").value = slPrice.toFixed(2);
         } else if (source === "input") {
           document.getElementById("sl-slider").value = slPrice;
+        } else if (source === "drag") {
+          // Update both slider and input when dragging
+          document.getElementById("sl-input").value = slPrice.toFixed(2);
+          document.getElementById("sl-slider").value = slPrice;
         } else {
           // Auto/External: Update both
           document.getElementById("sl-input").value = slPrice.toFixed(2);
           document.getElementById("sl-slider").value = slPrice;
         }
-        if (slLine) slLine.applyOptions({ price: slPrice });
+
+        // Update line with percentage in title
+        if (slLine) {
+          const slPct = getPriceDiffPercent(slPrice);
+          const slTitle = `SL ${slPct >= 0 ? "+" : ""}${slPct.toFixed(2)}%`;
+          slLine.applyOptions({ price: slPrice, title: slTitle });
+        }
         updatePnL();
       }
 
