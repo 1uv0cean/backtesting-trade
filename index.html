@@ -9575,27 +9575,6 @@
         }
 
         modal.classList.add("visible");
-
-        // Ask if user wants to register to leaderboard (only for wins)
-        if (result === "win") {
-          setTimeout(() => {
-            const stats = getAccountStats();
-            const wantToRegister = confirm(
-              `Round finished!\n\n` +
-                `Current Equity: $${stats.equity.toFixed(0)}\n` +
-                `Total Profit: ${
-                  stats.totalProfit >= 0 ? "+" : ""
-                }$${stats.totalProfit.toFixed(0)} (${
-                  stats.totalRoi >= 0 ? "+" : ""
-                }${stats.totalRoi.toFixed(2)}%)\n\n` +
-                `Would you like to register to the leaderboard?`
-            );
-
-            if (wantToRegister) {
-              openSubmitLeaderboard();
-            }
-          }, 500); // Small delay to let result modal appear first
-        }
       }
 
       function resetGame() {
