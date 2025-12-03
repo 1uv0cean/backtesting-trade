@@ -8702,11 +8702,12 @@
 
       function resetControls() {
         isPlaying = false;
-        document.getElementById("btn-start").disabled = false;
-        document.getElementById("btn-start").style.display = "block"; // Show button
+        const startBtn = document.getElementById("btn-start");
+        startBtn.disabled = false;
+        startBtn.style.display = "block"; // Show button
+        startBtn.className = "btn-start"; // Remove close position class
+        // Button text and onclick will be set by updateDashboard based on balance
         document.getElementById("live-pnl-container").style.display = "none"; // Hide Live PnL
-        document.getElementById("btn-start").innerText = "START TRADING";
-        document.getElementById("btn-start").className = "btn-start"; // Remove close position class
         document.getElementById("result-modal").classList.remove("visible");
 
         // Show Skip Candle button
@@ -8872,6 +8873,24 @@
         ).toLocaleString()}`;
         // Persistence: Save to local storage
         localStorage.setItem("chartMasterBalance", currentBalance);
+
+        // Update start button based on balance
+        const startBtn = document.getElementById("btn-start");
+        if (!isPlaying && startBtn) {
+          if (currentBalance <= 0) {
+            startBtn.innerText = "🚀 Sign Up to Bybit & Recharge";
+            startBtn.className = "btn-start";
+            startBtn.onclick = () => {
+              showBybitBalanceModal();
+            };
+            startBtn.disabled = false;
+          } else {
+            startBtn.innerText = "START TRADING";
+            startBtn.className = "btn-start";
+            startBtn.onclick = startGame;
+            startBtn.disabled = false;
+          }
+        }
 
         // Calculate Liq Price
         let liqPrice = 0;
@@ -9072,7 +9091,7 @@
       function startGame() {
         if (isPlaying) return;
 
-        // Check if balance is zero
+        // Balance check is now handled by button state
         if (currentBalance <= 0) {
           showBybitBalanceModal();
           return;
@@ -9408,12 +9427,11 @@
         document.getElementById("tp-slider").disabled = false;
         document.getElementById("sl-slider").disabled = false;
 
-        // Reset START TRADING button to original state
+        // Reset START TRADING button to original state (balance check handled by updateDashboard)
         const startBtn = document.getElementById("btn-start");
-        startBtn.innerText = "START TRADING";
         startBtn.className = "btn-start"; // Remove close position class
-        startBtn.onclick = startGame; // Restore original handler
         startBtn.disabled = false;
+        // Button text and onclick will be set by updateDashboard based on balance
 
         // Auto-Focus: Expand controls and show start button
         const controls = document.getElementById("controls-panel");
