@@ -734,8 +734,15 @@
       <div class="logo">
         <i class="fa-solid fa-chart-line"></i> The 100 Candles
       </div>
-      <div style="display: flex; align-items: center">
+      <div style="display: flex; align-items: center; gap: 10px">
         <div class="scenario-info" id="scenario-title">Loading...</div>
+        <button
+          class="btn-help"
+          onclick="showLeaderboard()"
+          title="Leaderboard"
+        >
+          <i class="fa-solid fa-trophy"></i>
+        </button>
         <button class="btn-help" onclick="startTutorial()" title="Help">
           <i class="fa-solid fa-circle-question"></i>
         </button>
@@ -913,6 +920,19 @@
         <a href="#" class="btn-cta" id="referral-link" target="_blank"
           >Start Real Trading</a
         >
+        <button
+          class="btn-cta"
+          id="btn-submit-leaderboard"
+          onclick="openSubmitLeaderboard()"
+          style="
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+            color: #000;
+            margin-top: 10px;
+            display: none;
+          "
+        >
+          🏆 Submit to Leaderboard
+        </button>
         <button class="btn-cta btn-retry" onclick="resetGame()">
           Try Next Scenario
         </button>
@@ -949,6 +969,98 @@
         >
           💰 Claim $10,000 Demo Funds
         </button>
+      </div>
+    </div>
+
+    <!-- Leaderboard Modal -->
+    <div class="modal-overlay" id="leaderboard-modal" style="z-index: 200">
+      <div
+        class="modal"
+        style="max-width: 600px; max-height: 80vh; overflow-y: auto"
+      >
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+          "
+        >
+          <div class="result-title" style="margin: 0">🏆 Leaderboard</div>
+          <button
+            class="btn-help"
+            onclick="closeLeaderboard()"
+            style="
+              background: transparent;
+              border: none;
+              font-size: 1.5rem;
+              cursor: pointer;
+              color: var(--text-color);
+            "
+          >
+            <i class="fa-solid fa-times"></i>
+          </button>
+        </div>
+        <div id="leaderboard-content" style="min-height: 200px">
+          <div style="text-align: center; padding: 40px; color: #787b86">
+            Loading leaderboard...
+          </div>
+        </div>
+        <button
+          class="btn-cta"
+          onclick="closeLeaderboard()"
+          style="margin-top: 20px"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+
+    <!-- Submit to Leaderboard Modal -->
+    <div
+      class="modal-overlay"
+      id="submit-leaderboard-modal"
+      style="z-index: 300"
+    >
+      <div class="modal" style="max-width: 400px">
+        <div class="result-icon">🎯</div>
+        <div class="result-title">Submit to Leaderboard</div>
+        <p class="result-desc" style="margin-bottom: 20px">
+          Enter your nickname to submit your score to the leaderboard!
+        </p>
+        <input
+          type="text"
+          id="nickname-input"
+          placeholder="Enter nickname (max 20 characters)"
+          maxlength="20"
+          style="
+            width: 100%;
+            padding: 12px;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-color);
+            font-size: 1rem;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+          "
+        />
+        <div style="display: flex; gap: 10px">
+          <button
+            class="btn-cta"
+            onclick="submitToLeaderboard()"
+            style="flex: 1"
+          >
+            Submit
+          </button>
+          <button
+            class="btn-cta"
+            onclick="closeSubmitLeaderboard()"
+            style="flex: 1; background: #404040"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
 
@@ -9170,6 +9282,11 @@
         }
 
         link.href = REFERRAL_LINK;
+
+        // Show leaderboard submit button
+        const submitBtn = document.getElementById("btn-submit-leaderboard");
+        submitBtn.style.display = "block";
+
         modal.classList.add("visible");
       }
 
@@ -9182,6 +9299,13 @@
 
         document.getElementById("result-modal").classList.remove("visible");
         document.getElementById("ad-modal").classList.remove("visible");
+        document
+          .getElementById("submit-leaderboard-modal")
+          .classList.remove("visible");
+
+        // Hide leaderboard submit button
+        const submitBtn = document.getElementById("btn-submit-leaderboard");
+        submitBtn.style.display = "none";
 
         // Reset Retry Button Text/Action
         const retryBtn = document.querySelector(".btn-retry");
@@ -9338,6 +9462,204 @@
           }
         }, 310);
       }
+
+      // --- Leaderboard Functions ---
+      const API_BASE_URL =
+        window.location.hostname === "localhost" ||
+        window.location.hostname === "127.0.0.1"
+          ? "http://localhost:3000/api"
+          : "https://the100candles.com/api";
+
+      // Store current game stats for leaderboard submission
+      let currentGameStats = null;
+
+      async function showLeaderboard() {
+        const modal = document.getElementById("leaderboard-modal");
+        const content = document.getElementById("leaderboard-content");
+
+        modal.classList.add("visible");
+        content.innerHTML =
+          '<div style="text-align: center; padding: 40px; color: #787b86">Loading leaderboard...</div>';
+
+        try {
+          const response = await fetch(
+            `${API_BASE_URL}/leaderboard?limit=100`,
+            {
+              credentials: "include",
+            }
+          );
+          const data = await response.json();
+
+          if (data.success && data.leaderboard.length > 0) {
+            let html =
+              '<div style="display: flex; flex-direction: column; gap: 8px">';
+
+            data.leaderboard.forEach((entry, index) => {
+              const medal =
+                index === 0
+                  ? "🥇"
+                  : index === 1
+                  ? "🥈"
+                  : index === 2
+                  ? "🥉"
+                  : "";
+              const rankDisplay = medal || `#${entry.rank}`;
+              const scoreColor =
+                entry.totalRoi >= 0
+                  ? "var(--accent-green)"
+                  : "var(--accent-red)";
+
+              html += `
+                <div style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: space-between;
+                  padding: 12px;
+                  background: ${
+                    index < 3 ? "rgba(255, 215, 0, 0.1)" : "var(--panel-bg)"
+                  };
+                  border: 1px solid var(--border-color);
+                  border-radius: 8px;
+                ">
+                  <div style="display: flex; align-items: center; gap: 12px; flex: 1">
+                    <span style="font-weight: 700; color: #787b86; min-width: 40px">${rankDisplay}</span>
+                    <span style="font-weight: 600; color: var(--text-color)">${
+                      entry.nickname
+                    }</span>
+                  </div>
+                  <div style="text-align: right">
+                    <div style="font-weight: 700; color: ${scoreColor}; font-size: 1.1rem">
+                      ${entry.totalRoi >= 0 ? "+" : ""}${entry.totalRoi.toFixed(
+                2
+              )}%
+                    </div>
+                    <div style="font-size: 0.85rem; color: #787b86">
+                      $${entry.equity.toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+              `;
+            });
+
+            html += "</div>";
+            content.innerHTML = html;
+          } else {
+            content.innerHTML =
+              '<div style="text-align: center; padding: 40px; color: #787b86">No entries yet. Be the first!</div>';
+          }
+        } catch (error) {
+          console.error("Error loading leaderboard:", error);
+          content.innerHTML =
+            '<div style="text-align: center; padding: 40px; color: var(--accent-red)">Failed to load leaderboard. Please try again later.</div>';
+        }
+      }
+
+      function closeLeaderboard() {
+        document
+          .getElementById("leaderboard-modal")
+          .classList.remove("visible");
+      }
+
+      function openSubmitLeaderboard() {
+        // Store current game stats
+        const stats = getAccountStats();
+        currentGameStats = {
+          score: stats.equity, // Use equity as score
+          equity: stats.equity,
+          totalProfit: stats.totalProfit,
+          totalRoi: stats.totalRoi,
+        };
+
+        // Clear nickname input
+        document.getElementById("nickname-input").value = "";
+
+        // Show submit modal
+        document
+          .getElementById("submit-leaderboard-modal")
+          .classList.add("visible");
+        document.getElementById("nickname-input").focus();
+      }
+
+      function closeSubmitLeaderboard() {
+        document
+          .getElementById("submit-leaderboard-modal")
+          .classList.remove("visible");
+        currentGameStats = null;
+      }
+
+      async function submitToLeaderboard() {
+        const nicknameInput = document.getElementById("nickname-input");
+        const nickname = nicknameInput.value.trim();
+
+        if (!nickname) {
+          alert("Please enter a nickname");
+          return;
+        }
+
+        if (!currentGameStats) {
+          alert("No game stats available");
+          return;
+        }
+
+        const submitBtn =
+          nicknameInput.nextElementSibling.querySelector("button");
+        const originalText = submitBtn.innerText;
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Submitting...";
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/leaderboard`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({
+              nickname: nickname,
+              score: currentGameStats.score,
+              equity: currentGameStats.equity,
+              totalProfit: currentGameStats.totalProfit,
+              totalRoi: currentGameStats.totalRoi,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            closeSubmitLeaderboard();
+            alert(`Successfully submitted! Your rank: #${data.rank}`);
+            // Optionally refresh leaderboard if it's open
+            if (
+              document
+                .getElementById("leaderboard-modal")
+                .classList.contains("visible")
+            ) {
+              showLeaderboard();
+            }
+          } else {
+            alert("Failed to submit: " + (data.error || "Unknown error"));
+            submitBtn.disabled = false;
+            submitBtn.innerText = originalText;
+          }
+        } catch (error) {
+          console.error("Error submitting to leaderboard:", error);
+          alert("Failed to submit to leaderboard. Please try again.");
+          submitBtn.disabled = false;
+          submitBtn.innerText = originalText;
+        }
+      }
+
+      // Allow Enter key to submit
+      document.addEventListener("DOMContentLoaded", () => {
+        const nicknameInput = document.getElementById("nickname-input");
+        if (nicknameInput) {
+          nicknameInput.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") {
+              submitToLeaderboard();
+            }
+          });
+        }
+      });
     </script>
   </body>
 </html>

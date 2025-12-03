@@ -1,0 +1,5 @@
+node_modules/
+leaderboard.json
+.env
+*.log
+.DS_Store
