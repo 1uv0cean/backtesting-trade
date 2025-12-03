@@ -8549,6 +8549,9 @@
         loadScenario();
         checkFirstVisit();
 
+        // Ensure button state is updated based on initial balance
+        updateDashboard();
+
         // Show toast hint
         setTimeout(() => {
           document.getElementById("toast").classList.add("visible");
@@ -8874,9 +8877,9 @@
         // Persistence: Save to local storage
         localStorage.setItem("chartMasterBalance", currentBalance);
 
-        // Update start button based on balance
+        // Update start button based on balance (only when not playing)
         const startBtn = document.getElementById("btn-start");
-        if (!isPlaying && startBtn) {
+        if (startBtn && !isPlaying) {
           if (currentBalance <= 0) {
             startBtn.innerText = "🚀 Sign Up to Bybit & Recharge";
             startBtn.className = "btn-start";
