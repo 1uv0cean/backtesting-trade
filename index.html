@@ -1064,6 +1064,42 @@
       </div>
     </div>
 
+    <!-- Bybit Referral Modal (After Leaderboard Submission) -->
+    <div class="modal-overlay" id="bybit-referral-modal" style="z-index: 400">
+      <div class="modal" style="max-width: 450px">
+        <div class="result-icon">🎉</div>
+        <div class="result-title" style="color: var(--accent-green)">
+          Congratulations!
+        </div>
+        <p class="result-desc">
+          Your score has been submitted to the leaderboard! Ready to trade for
+          real? Join Bybit and get exclusive bonuses to start your trading
+          journey.
+        </p>
+
+        <a
+          href="https://www.bybit.com/invite?ref=JAKO2W"
+          target="_blank"
+          class="btn-cta"
+          style="
+            background: linear-gradient(135deg, #f7931a 0%, #ffb84d 100%);
+            margin-bottom: 10px;
+          "
+          onclick="trackBybitClick()"
+        >
+          🚀 Sign Up to Bybit & Get Bonus
+        </a>
+
+        <button
+          class="btn-cta"
+          onclick="closeBybitReferralModal()"
+          style="background: #404040"
+        >
+          Maybe Later
+        </button>
+      </div>
+    </div>
+
     <!-- Driver.js -->
     <script src="https://cdn.jsdelivr.net/npm/driver.js@1.0.1/dist/driver.js.iife.js"></script>
     <!-- html2canvas -->
@@ -9288,6 +9324,25 @@
         submitBtn.style.display = "block";
 
         modal.classList.add("visible");
+
+        // Ask if user wants to register to leaderboard
+        setTimeout(() => {
+          const stats = getAccountStats();
+          const wantToRegister = confirm(
+            `Round finished!\n\n` +
+              `Current Equity: $${stats.equity.toFixed(0)}\n` +
+              `Total Profit: ${
+                stats.totalProfit >= 0 ? "+" : ""
+              }$${stats.totalProfit.toFixed(0)} (${
+                stats.totalRoi >= 0 ? "+" : ""
+              }${stats.totalRoi.toFixed(2)}%)\n\n` +
+              `Would you like to register to the leaderboard?`
+          );
+
+          if (wantToRegister) {
+            openSubmitLeaderboard();
+          }
+        }, 500); // Small delay to let result modal appear first
       }
 
       function resetGame() {
@@ -9301,6 +9356,9 @@
         document.getElementById("ad-modal").classList.remove("visible");
         document
           .getElementById("submit-leaderboard-modal")
+          .classList.remove("visible");
+        document
+          .getElementById("bybit-referral-modal")
           .classList.remove("visible");
 
         // Hide leaderboard submit button
@@ -9587,6 +9645,30 @@
         currentGameStats = null;
       }
 
+      function showBybitReferralModal(rank) {
+        const modal = document.getElementById("bybit-referral-modal");
+        const desc = modal.querySelector(".result-desc");
+        desc.innerText =
+          `Your score has been submitted! Your rank: #${rank}\n\n` +
+          `Ready to trade for real? Join Bybit and get exclusive bonuses to start your trading journey.`;
+        modal.classList.add("visible");
+      }
+
+      function closeBybitReferralModal() {
+        document
+          .getElementById("bybit-referral-modal")
+          .classList.remove("visible");
+      }
+
+      function trackBybitClick() {
+        // Track referral click (can be extended with analytics)
+        console.log("Bybit referral link clicked");
+        // Close modal after a short delay to allow navigation
+        setTimeout(() => {
+          closeBybitReferralModal();
+        }, 100);
+      }
+
       async function submitToLeaderboard() {
         const nicknameInput = document.getElementById("nickname-input");
         const nickname = nicknameInput.value.trim();
@@ -9627,7 +9709,6 @@
 
           if (data.success) {
             closeSubmitLeaderboard();
-            alert(`Successfully submitted! Your rank: #${data.rank}`);
             // Optionally refresh leaderboard if it's open
             if (
               document
@@ -9636,6 +9717,10 @@
             ) {
               showLeaderboard();
             }
+            // Show Bybit referral modal after successful submission
+            setTimeout(() => {
+              showBybitReferralModal(data.rank);
+            }, 300);
           } else {
             alert("Failed to submit: " + (data.error || "Unknown error"));
             submitBtn.disabled = false;
