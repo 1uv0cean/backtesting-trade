@@ -9033,6 +9033,9 @@
         currentBalance += pnl;
         currentTradePnL = 0;
         if (currentBalance < 0) currentBalance = 0;
+
+        // Reset playing state before updating dashboard (so button can update)
+        isPlaying = false;
         updateDashboard();
 
         // Show result modal with "MANUAL CLOSE" title
@@ -9082,9 +9085,6 @@
         }
 
         modal.classList.add("visible");
-
-        // Reset button state
-        isPlaying = false;
       }
 
       // --- Game Logic ---
@@ -9236,6 +9236,7 @@
 
       function finishGame(result) {
         clearInterval(animationInterval);
+        isPlaying = false; // Set playing state to false so button can update
 
         let pnl = 0;
         let pnlPct = 0;
