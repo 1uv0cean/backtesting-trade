@@ -1322,13 +1322,14 @@
       };
 
       // --- State ---
-      let chart, candleSeries, tpLine, slLine;
+      let chart, candleSeries, tpLine, slLine, liqLine;
       // Drawing state removed
       let currentScenario = null;
       let currentDirection = "long";
       let entryPrice = 0;
       let tpPrice = 0;
       let slPrice = 0;
+      let liqPrice = 0;
       let isPlaying = false;
       let animationInterval;
       let futureData = [];
@@ -8883,6 +8884,7 @@
         updateTP(tpSlider.value, "slider");
         updateSL(slSlider.value, "slider");
         updateDashboard();
+        createTPSLLines(); // Update all lines including liquidation
       }
 
       function updateLeverage(val) {
@@ -8893,11 +8895,14 @@
         document.getElementById(
           "dash-leverage"
         ).innerText = `${currentLeverage}x`;
-        let liqPrice = updateDashboard();
-        if (isNaN(liqPrice)) liqPrice = 0;
+        let newLiqPrice = updateDashboard();
+        if (isNaN(newLiqPrice)) newLiqPrice = 0;
+
+        // Update liquidation line
+        createTPSLLines();
 
         // Auto-set SL to Liq Price
-        updateSL(liqPrice, "auto");
+        updateSL(newLiqPrice, "auto");
       }
 
       function setDirection(dir) {
@@ -8932,6 +8937,7 @@
       function createTPSLLines() {
         if (tpLine) candleSeries.removePriceLine(tpLine);
         if (slLine) candleSeries.removePriceLine(slLine);
+        if (liqLine) candleSeries.removePriceLine(liqLine);
 
         const tpPct = getPriceDiffPercent(tpPrice);
         const tpTitle = `TP ${tpPct >= 0 ? "+" : ""}${tpPct.toFixed(2)}%`;
@@ -8956,6 +8962,21 @@
           axisLabelVisible: true,
           title: slTitle,
         });
+
+        // Create Liquidation Price Line
+        if (liqPrice > 0) {
+          const liqPct = getPriceDiffPercent(liqPrice);
+          const liqTitle = `LIQ ${liqPct >= 0 ? "+" : ""}${liqPct.toFixed(2)}%`;
+
+          liqLine = candleSeries.createPriceLine({
+            price: liqPrice,
+            color: "#ff6b6b",
+            lineWidth: 2,
+            lineStyle: LightweightCharts.LineStyle.Solid,
+            axisLabelVisible: true,
+            title: liqTitle,
+          });
+        }
       }
 
       function updateTP(val, source) {
@@ -9065,18 +9086,36 @@
         }
 
         // Calculate Liq Price
-        let liqPrice = 0;
+        let newLiqPrice = 0;
         if (currentDirection === "long") {
-          liqPrice = entryPrice * (1 - 1 / currentLeverage);
+          newLiqPrice = entryPrice * (1 - 1 / currentLeverage);
         } else {
-          liqPrice = entryPrice * (1 + 1 / currentLeverage);
+          newLiqPrice = entryPrice * (1 + 1 / currentLeverage);
         }
         // Clamp liq price to 0
-        if (liqPrice < 0) liqPrice = 0;
+        if (newLiqPrice < 0) newLiqPrice = 0;
+
+        // Update liqPrice variable
+        liqPrice = newLiqPrice;
 
         document.getElementById("dash-liq").innerText = `$${liqPrice.toFixed(
           2
         )}`;
+
+        // Update liquidation line if it exists
+        if (liqLine && liqPrice > 0) {
+          const liqPct = getPriceDiffPercent(liqPrice);
+          const liqTitle = `LIQ ${liqPct >= 0 ? "+" : ""}${liqPct.toFixed(2)}%`;
+          liqLine.applyOptions({ price: liqPrice, title: liqTitle });
+        } else if (liqPrice > 0) {
+          // Create line if it doesn't exist
+          createTPSLLines();
+        } else if (liqLine) {
+          // Remove line if liqPrice is 0
+          candleSeries.removePriceLine(liqLine);
+          liqLine = null;
+        }
+
         return liqPrice;
       }
 
