@@ -9308,14 +9308,26 @@
 
       // --- Game Logic ---
       function startGame() {
+        // Check if already playing
         if (isPlaying) return;
 
-        // Balance check is now handled by button state
+        // Balance check MUST be done first before any game logic
+        // Load latest balance from localStorage to ensure we have the most current value
+        const savedBalance = localStorage.getItem("chartMasterBalance");
+        if (savedBalance !== null) {
+          const latestBalance = parseFloat(savedBalance);
+          if (!isNaN(latestBalance)) {
+            currentBalance = latestBalance;
+          }
+        }
+
+        // Prevent starting game if balance is 0 or negative
         if (currentBalance <= 0) {
           showBybitBalanceModal();
           return;
         }
 
+        // All checks passed, start the game
         isPlaying = true;
 
         // Sound: Click
