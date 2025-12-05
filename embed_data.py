@@ -32,7 +32,7 @@ with open('index.html', 'r') as f:
 new_script_start = """
     <script>
         // --- Configuration ---
-        const REFERRAL_LINK = 'https://www.bybit.com/invite?ref=JAKO2W'; // Replace with actual link
+        const REFERRAL_LINK = 'https://trader.ftmo.com/?affiliates=AbMCGTkBZWBCZJUpDrBM'; // FTMO affiliate link
         const INITIAL_BALANCE = 10000; // Virtual balance
         const LEVERAGE = 10; // 10x leverage for excitement
 

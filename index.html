@@ -948,16 +948,17 @@
         </div>
         <p class="result-desc">
           In real trading, you would have lost $10,000. Fortunately, this was
-          just practice. Get a $30,000 exchange bonus and recover risk-free.
+          just practice. Learn risk management with FTMO's funded account
+          program. Trade with their capital instead of risking your own.
         </p>
 
         <a
-          href="https://www.bybit.com/invite?ref=JAKO2W"
+          href="https://trader.ftmo.com/?affiliates=AbMCGTkBZWBCZJUpDrBM"
           target="_blank"
           class="btn-cta"
           onclick="enableClaim()"
         >
-          Get Free Airdrop
+          Get FTMO Funded Account
         </a>
 
         <button
@@ -1064,8 +1065,8 @@
       </div>
     </div>
 
-    <!-- Bybit Referral Modal (After Leaderboard Submission) -->
-    <div class="modal-overlay" id="bybit-referral-modal" style="z-index: 400">
+    <!-- FTMO Referral Modal (After Leaderboard Submission) -->
+    <div class="modal-overlay" id="ftmo-referral-modal" style="z-index: 400">
       <div class="modal" style="max-width: 450px">
         <div class="result-icon">🎉</div>
         <div class="result-title" style="color: var(--accent-green)">
@@ -1073,26 +1074,26 @@
         </div>
         <p class="result-desc">
           Your score has been submitted to the leaderboard! Ready to trade for
-          real? Join Bybit and get exclusive bonuses to start your trading
-          journey.
+          real? Get funded by FTMO and trade with up to $200,000 in capital.
+          Keep up to 90% of your profits.
         </p>
 
         <a
-          href="https://www.bybit.com/invite?ref=JAKO2W"
+          href="https://trader.ftmo.com/?affiliates=AbMCGTkBZWBCZJUpDrBM"
           target="_blank"
           class="btn-cta"
           style="
-            background: linear-gradient(135deg, #f7931a 0%, #ffb84d 100%);
+            background: linear-gradient(135deg, #1e88e5 0%, #42a5f5 100%);
             margin-bottom: 10px;
           "
-          onclick="trackBybitClick()"
+          onclick="trackFTMOClick()"
         >
-          🚀 Sign Up to Bybit & Get Bonus
+          🚀 Start FTMO Challenge (Get Funded)
         </a>
 
         <button
           class="btn-cta"
-          onclick="closeBybitReferralModal()"
+          onclick="closeFTMOReferralModal()"
           style="background: #404040"
         >
           Maybe Later
@@ -1302,7 +1303,8 @@
 
     <script>
       // --- Configuration ---
-      const REFERRAL_LINK = "https://www.bybit.com/invite?ref=JAKO2W"; // Replace with actual link
+      const REFERRAL_LINK =
+        "https://trader.ftmo.com/?affiliates=AbMCGTkBZWBCZJUpDrBM"; // FTMO affiliate link
       const INITIAL_BALANCE = 10000;
       // Persistence: Load from local storage or default
       // Check if value exists in localStorage first (to handle 0 balance correctly)
@@ -9076,10 +9078,10 @@
         const startBtn = document.getElementById("btn-start");
         if (startBtn && !isPlaying) {
           if (currentBalance <= 0) {
-            startBtn.innerText = "🚀 Sign Up to Bybit & Recharge";
+            startBtn.innerText = "🚀 Get FTMO Funded Account";
             startBtn.className = "btn-start";
             startBtn.onclick = () => {
-              showBybitBalanceModal();
+              showFTMOBalanceModal();
             };
             startBtn.disabled = false;
           } else {
@@ -9265,20 +9267,26 @@
         const desc = document.getElementById("result-desc");
         const link = document.getElementById("referral-link");
 
-        if (pnl >= 0) {
+        if (pnl > 0) {
+          // User WINS
           playProfitSound();
           icon.innerText = "✋";
-          title.innerText = "MANUAL CLOSE";
+          title.innerText = "You are ready to get funded.";
           title.style.color = "var(--accent-green)";
           amount.style.color = "var(--accent-green)";
-          link.innerText = "Trade Like a Pro (Sign Up)";
+          desc.innerText =
+            "Your trading skills are solid. Stop trading with your own money. Get up to $200,000 in funding from FTMO and keep up to 90% of the profits.";
+          link.innerText = "Start FTMO Challenge (Get Funded)";
         } else {
+          // User LOSES
           playLossSound();
           icon.innerText = "✋";
-          title.innerText = "MANUAL CLOSE";
+          title.innerText = "Don't lose your own savings.";
           title.style.color = "var(--accent-red)";
           amount.style.color = "var(--accent-red)";
-          link.innerText = "Learn Risk Management (Sign Up)";
+          desc.innerText =
+            "The market is volatile. Trade with FTMO's capital instead of risking your own. Prove your skills in a risk-free environment first.";
+          link.innerText = "Get a Funded Account (Risk-Free)";
         }
 
         amount.innerText =
@@ -9323,7 +9331,7 @@
 
         // Prevent starting game if balance is 0 or negative
         if (currentBalance <= 0) {
-          showBybitBalanceModal();
+          showFTMOBalanceModal();
           return;
         }
 
@@ -9519,10 +9527,12 @@
           playLiquidationSound();
 
           icon.innerText = "💀";
-          title.innerText = "LIQUIDATED";
+          title.innerText = "Imagine if this was real money...";
           title.style.color = "var(--accent-red)";
           amount.style.color = "var(--accent-red)";
-          link.innerText = "Recharge & Try Again";
+          desc.innerText =
+            "Luckily, it wasn't. Learn risk management with a Prop Firm account. If you lose their money, you don't owe them anything.";
+          link.innerText = "Try FTMO Free Trial";
 
           // Bankruptcy Check
           if (currentBalance <= 1) {
@@ -9544,27 +9554,31 @@
               document.getElementById("ad-modal").classList.add("visible");
             };
           }
-        } else if (pnl >= 0) {
-          // Sound: Profit
+        } else if (pnl > 0) {
+          // Sound: Profit - User WINS
           playProfitSound();
 
           icon.innerText = "🚀";
-          title.innerText = "PROFIT!";
+          title.innerText = "You are ready to get funded.";
           title.style.color = "var(--accent-green)";
           amount.style.color = "var(--accent-green)";
-          link.innerText = "Start Real Trading";
-        } else if (pnl < 0) {
-          // Sound: Loss
+          desc.innerText =
+            "Your trading skills are solid. Stop trading with your own money. Get up to $200,000 in funding from FTMO and keep up to 90% of the profits.";
+          link.innerText = "Start FTMO Challenge (Get Funded)";
+        } else if (pnl <= 0) {
+          // Sound: Loss - User LOSES
           playLossSound();
 
           icon.innerText = "📉";
-          title.innerText = "STOPPED OUT";
+          title.innerText = "Don't lose your own savings.";
           title.style.color = "var(--accent-red)";
           amount.style.color = "var(--accent-red)";
-          link.innerText = "Learn Risk Management (Sign Up)";
+          desc.innerText =
+            "The market is volatile. Trade with FTMO's capital instead of risking your own. Prove your skills in a risk-free environment first.";
+          link.innerText = "Get a Funded Account (Risk-Free)";
         }
 
-        // Update Modal with Trade Stats (User Request: "Profit!" shows trade result only)
+        // Update Modal with Trade Stats
         amount.innerText =
           (pnl >= 0 ? "+" : "") +
           "$" +
@@ -9572,21 +9586,7 @@
           " (" +
           pnlPct.toFixed(1) +
           "%)";
-        // Update description based on result
-        if (result === "win") {
-          desc.innerText =
-            "You're in the top 5% of traders! With these skills, you can start making profits right now.";
-        } else {
-          desc.innerText =
-            currentScenario.description +
-            "\n\nEntry: $" +
-            entryPrice.toFixed(2) +
-            "\nExit: $" +
-            (result === "loss"
-              ? slPrice
-              : futureData[futureData.length - 1].close
-            ).toFixed(2);
-        }
+        // Description is already set above based on result type (Win/Loss/Bankrupt)
 
         link.href = REFERRAL_LINK;
 
@@ -9611,7 +9611,7 @@
 
           title.innerText = "BANKRUPT!";
           desc.innerText =
-            "In real trading, you would have lost $10,000. Fortunately, this was just practice. Get a $30,000 exchange bonus and recover risk-free.";
+            "In real trading, you would have lost $10,000. Fortunately, this was just practice. Learn risk management with FTMO's funded account program. Trade with their capital instead of risking your own.";
 
           modal.classList.add("visible");
           return;
@@ -9623,7 +9623,7 @@
           .getElementById("submit-leaderboard-modal")
           .classList.remove("visible");
         document
-          .getElementById("bybit-referral-modal")
+          .getElementById("ftmo-referral-modal")
           .classList.remove("visible");
 
         // Hide leaderboard submit button
@@ -9673,7 +9673,7 @@
       }
 
       // --- Referral / Bankruptcy Logic ---
-      function showBybitBalanceModal() {
+      function showFTMOBalanceModal() {
         // Update modal text for zero balance scenario
         const modal = document.getElementById("ad-modal");
         const title = modal.querySelector(".result-title");
@@ -9681,7 +9681,7 @@
 
         title.innerText = "INSUFFICIENT BALANCE";
         desc.innerText =
-          "Your balance is $0. Visit Bybit to get started and claim your bonus funds to continue trading!";
+          "Your balance is $0. Get funded by FTMO and trade with up to $200,000 in capital. Keep up to 90% of your profits!";
 
         // Reset claim button state
         const btn = document.getElementById("btn-claim-reward");
@@ -9933,27 +9933,27 @@
         currentGameStats = null;
       }
 
-      function showBybitReferralModal(rank) {
-        const modal = document.getElementById("bybit-referral-modal");
+      function showFTMOReferralModal(rank) {
+        const modal = document.getElementById("ftmo-referral-modal");
         const desc = modal.querySelector(".result-desc");
         desc.innerText =
           `Your score has been submitted! Your rank: #${rank}\n\n` +
-          `Ready to trade for real? Join Bybit and get exclusive bonuses to start your trading journey.`;
+          `Ready to trade for real? Get funded by FTMO and trade with up to $200,000 in capital. Keep up to 90% of your profits.`;
         modal.classList.add("visible");
       }
 
-      function closeBybitReferralModal() {
+      function closeFTMOReferralModal() {
         document
-          .getElementById("bybit-referral-modal")
+          .getElementById("ftmo-referral-modal")
           .classList.remove("visible");
       }
 
-      function trackBybitClick() {
+      function trackFTMOClick() {
         // Track referral click (can be extended with analytics)
-        console.log("Bybit referral link clicked");
+        console.log("FTMO referral link clicked");
         // Close modal after a short delay to allow navigation
         setTimeout(() => {
-          closeBybitReferralModal();
+          closeFTMOReferralModal();
         }, 100);
       }
 
@@ -10005,9 +10005,9 @@
             ) {
               showLeaderboard();
             }
-            // Show Bybit referral modal after successful submission
+            // Show FTMO referral modal after successful submission
             setTimeout(() => {
-              showBybitReferralModal(data.rank);
+              showFTMOReferralModal(data.rank);
             }, 300);
           } else {
             alert("Failed to submit: " + (data.error || "Unknown error"));
@@ -10034,5 +10034,40 @@
         }
       });
     </script>
+
+    <!-- Powered by FTMO Badge -->
+    <div
+      style="
+        position: fixed;
+        bottom: 10px;
+        right: 10px;
+        background: rgba(30, 136, 229, 0.1);
+        border: 1px solid rgba(30, 136, 229, 0.3);
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-size: 0.75rem;
+        color: #787b86;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      "
+    >
+      <span>Powered by</span>
+      <a
+        href="https://trader.ftmo.com/?affiliates=AbMCGTkBZWBCZJUpDrBM"
+        target="_blank"
+        style="
+          color: #1e88e5;
+          text-decoration: none;
+          font-weight: 600;
+          transition: color 0.2s;
+        "
+        onmouseover="this.style.color='#42a5f5'"
+        onmouseout="this.style.color='#1e88e5'"
+      >
+        FTMO
+      </a>
+    </div>
   </body>
 </html>
