@@ -8,6 +8,7 @@ const path = require("path");
 const app = express();
 const PORT = process.env.PORT || 3000;
 const LEADERBOARD_FILE = path.join(__dirname, "leaderboard.json");
+const USERS_FILE = path.join(__dirname, "users.json");
 
 // Middleware
 app.use(
@@ -47,6 +48,30 @@ async function initializeLeaderboard() {
   } catch (error) {
     await fs.writeFile(LEADERBOARD_FILE, JSON.stringify([], null, 2));
   }
+}
+
+// Initialize users file if it doesn't exist
+async function initializeUsers() {
+  try {
+    await fs.access(USERS_FILE);
+  } catch (error) {
+    await fs.writeFile(USERS_FILE, JSON.stringify({}, null, 2));
+  }
+}
+
+// Read users data
+async function readUsers() {
+  try {
+    const data = await fs.readFile(USERS_FILE, "utf8");
+    return JSON.parse(data);
+  } catch (error) {
+    return {};
+  }
+}
+
+// Write users data
+async function writeUsers(data) {
+  await fs.writeFile(USERS_FILE, JSON.stringify(data, null, 2));
 }
 
 // Generate or retrieve user ID from cookie
@@ -89,8 +114,22 @@ app.get("/api/leaderboard", async (req, res) => {
     const limit = parseInt(req.query.limit) || 100;
     const leaderboard = await readLeaderboard();
 
+    // Group by userId and keep only the best entry per user
+    const userBestEntries = {};
+    leaderboard.forEach((entry) => {
+      if (
+        !userBestEntries[entry.userId] ||
+        entry.score > userBestEntries[entry.userId].score
+      ) {
+        userBestEntries[entry.userId] = entry;
+      }
+    });
+
+    // Convert back to array
+    const uniqueEntries = Object.values(userBestEntries);
+
     // Sort by score (descending), then by date (ascending for same score)
-    const sorted = leaderboard.sort((a, b) => {
+    const sorted = uniqueEntries.sort((a, b) => {
       if (b.score !== a.score) {
         return b.score - a.score;
       }
@@ -144,38 +183,79 @@ app.post("/api/leaderboard", async (req, res) => {
     // Read current leaderboard
     const leaderboard = await readLeaderboard();
 
-    // Create new entry
-    const newEntry = {
-      id: uuidv4(),
-      userId: userId,
-      nickname: sanitizedNickname,
-      score: score,
-      equity: equity || 0,
-      totalProfit: totalProfit || 0,
-      totalRoi: totalRoi || 0,
-      date: new Date().toISOString(),
-    };
+    // Remove all existing entries for this user (to ensure only one entry per user)
+    const filteredLeaderboard = leaderboard.filter(
+      (entry) => entry.userId !== userId
+    );
 
-    // Add to leaderboard
-    leaderboard.push(newEntry);
+    // Find the best existing entry for this user (if any)
+    const existingEntries = leaderboard.filter(
+      (entry) => entry.userId === userId
+    );
+    const bestExistingEntry =
+      existingEntries.length > 0
+        ? existingEntries.reduce((best, current) =>
+            current.score > best.score ? current : best
+          )
+        : null;
+
+    let entry;
+    let isNewEntry = false;
+    let updated = false;
+
+    if (bestExistingEntry && score > bestExistingEntry.score) {
+      // Update with new higher score
+      entry = {
+        ...bestExistingEntry,
+        nickname: sanitizedNickname,
+        score: score,
+        equity: equity || 0,
+        totalProfit: totalProfit || 0,
+        totalRoi: totalRoi || 0,
+        date: new Date().toISOString(),
+      };
+      updated = true;
+    } else if (bestExistingEntry) {
+      // Score is not higher, keep existing entry
+      entry = bestExistingEntry;
+    } else {
+      // New user entry
+      isNewEntry = true;
+      entry = {
+        id: uuidv4(),
+        userId: userId,
+        nickname: sanitizedNickname,
+        score: score,
+        equity: equity || 0,
+        totalProfit: totalProfit || 0,
+        totalRoi: totalRoi || 0,
+        date: new Date().toISOString(),
+      };
+    }
+
+    // Add the entry back to the leaderboard
+    filteredLeaderboard.push(entry);
+    const updatedLeaderboard = filteredLeaderboard;
 
     // Save leaderboard
-    await writeLeaderboard(leaderboard);
+    await writeLeaderboard(updatedLeaderboard);
 
     // Get user's rank
-    const sorted = leaderboard.sort((a, b) => {
+    const sorted = updatedLeaderboard.sort((a, b) => {
       if (b.score !== a.score) {
         return b.score - a.score;
       }
       return new Date(a.date) - new Date(b.date);
     });
 
-    const userRank = sorted.findIndex((entry) => entry.id === newEntry.id) + 1;
+    const userRank = sorted.findIndex((e) => e.id === entry.id) + 1;
 
     res.json({
       success: true,
-      entry: newEntry,
+      entry: entry,
       rank: userRank,
+      updated: updated,
+      isNewEntry: isNewEntry,
     });
   } catch (error) {
     console.error("Error submitting to leaderboard:", error);
@@ -186,9 +266,51 @@ app.post("/api/leaderboard", async (req, res) => {
 });
 
 // GET /api/user/me - Get current user info
-app.get("/api/user/me", (req, res) => {
-  const userId = getOrCreateUserId(req, res);
-  res.json({ success: true, userId });
+app.get("/api/user/me", async (req, res) => {
+  try {
+    const userId = getOrCreateUserId(req, res);
+    const users = await readUsers();
+    const nickname = users[userId] || null;
+    res.json({ success: true, userId, nickname });
+  } catch (error) {
+    console.error("Error getting user info:", error);
+    res.status(500).json({ success: false, error: "Failed to get user info" });
+  }
+});
+
+// POST /api/user/nickname - Set user nickname
+app.post("/api/user/nickname", async (req, res) => {
+  try {
+    const { nickname } = req.body;
+    const userId = getOrCreateUserId(req, res);
+
+    // Validation
+    if (
+      !nickname ||
+      typeof nickname !== "string" ||
+      nickname.trim().length === 0
+    ) {
+      return res
+        .status(400)
+        .json({ success: false, error: "Nickname is required" });
+    }
+
+    // Sanitize nickname
+    const sanitizedNickname = nickname.trim().substring(0, 20);
+
+    // Read users
+    const users = await readUsers();
+    users[userId] = sanitizedNickname;
+    await writeUsers(users);
+
+    res.json({
+      success: true,
+      nickname: sanitizedNickname,
+    });
+  } catch (error) {
+    console.error("Error setting nickname:", error);
+    res.status(500).json({ success: false, error: "Failed to set nickname" });
+  }
 });
 
 // GET /api/user/rank - Get user's current rank
@@ -211,8 +333,20 @@ app.get("/api/user/rank", async (req, res) => {
       current.score > best.score ? current : best
     );
 
-    // Calculate rank
-    const sorted = leaderboard.sort((a, b) => {
+    // Group by userId and keep only the best entry per user (same as GET /api/leaderboard)
+    const userBestEntries = {};
+    leaderboard.forEach((entry) => {
+      if (
+        !userBestEntries[entry.userId] ||
+        entry.score > userBestEntries[entry.userId].score
+      ) {
+        userBestEntries[entry.userId] = entry;
+      }
+    });
+
+    // Convert to array and sort
+    const uniqueEntries = Object.values(userBestEntries);
+    const sorted = uniqueEntries.sort((a, b) => {
       if (b.score !== a.score) {
         return b.score - a.score;
       }
@@ -223,7 +357,7 @@ app.get("/api/user/rank", async (req, res) => {
 
     res.json({
       success: true,
-      rank: rank,
+      rank: rank > 0 ? rank : null,
       bestScore: bestEntry.score,
       bestEntry: bestEntry,
     });
@@ -250,6 +384,7 @@ app.get("/", (req, res) => {
 // Initialize and start server
 async function startServer() {
   await initializeLeaderboard();
+  await initializeUsers();
 
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);

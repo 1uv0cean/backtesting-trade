@@ -1017,21 +1017,18 @@
       </div>
     </div>
 
-    <!-- Submit to Leaderboard Modal -->
-    <div
-      class="modal-overlay"
-      id="submit-leaderboard-modal"
-      style="z-index: 300"
-    >
+    <!-- Nickname Setup Modal (First Time User) -->
+    <div class="modal-overlay" id="nickname-setup-modal" style="z-index: 500">
       <div class="modal" style="max-width: 400px">
-        <div class="result-icon">🎯</div>
-        <div class="result-title">Submit to Leaderboard</div>
+        <div class="result-icon">👋</div>
+        <div class="result-title">Welcome!</div>
         <p class="result-desc" style="margin-bottom: 20px">
-          Enter your nickname to submit your score to the leaderboard!
+          Please enter your nickname to get started. This will be used for the
+          leaderboard.
         </p>
         <input
           type="text"
-          id="nickname-input"
+          id="nickname-setup-input"
           placeholder="Enter nickname (max 20 characters)"
           maxlength="20"
           style="
@@ -1046,6 +1043,27 @@
             box-sizing: border-box;
           "
         />
+        <div style="display: flex; gap: 10px">
+          <button class="btn-cta" onclick="saveNickname()" style="flex: 1">
+            Save
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit to Leaderboard Modal -->
+    <div
+      class="modal-overlay"
+      id="submit-leaderboard-modal"
+      style="z-index: 300"
+    >
+      <div class="modal" style="max-width: 400px">
+        <div class="result-icon">🎯</div>
+        <div class="result-title">Submit to Leaderboard</div>
+        <p class="result-desc" style="margin-bottom: 20px">
+          Your score will be submitted with your nickname:
+          <strong id="current-nickname-display"></strong>
+        </p>
         <div style="display: flex; gap: 10px">
           <button
             class="btn-cta"
@@ -9819,6 +9837,9 @@
       // Store current game stats for leaderboard submission
       let currentGameStats = null;
 
+      // Store user nickname
+      let userNickname = null;
+
       async function showLeaderboard() {
         const modal = document.getElementById("leaderboard-modal");
         const content = document.getElementById("leaderboard-content");
@@ -9907,7 +9928,7 @@
       }
 
       function openSubmitLeaderboard() {
-        // Store current game stats
+        // Store current game stats first (needed even if nickname is missing)
         const stats = getAccountStats();
         currentGameStats = {
           score: stats.equity, // Use equity as score
@@ -9916,14 +9937,22 @@
           totalRoi: stats.totalRoi,
         };
 
-        // Clear nickname input
-        document.getElementById("nickname-input").value = "";
+        // Check if user has nickname
+        if (!userNickname) {
+          // Show nickname setup modal first
+          document
+            .getElementById("nickname-setup-modal")
+            .classList.add("visible");
+          document.getElementById("nickname-setup-input").focus();
+          return;
+        }
 
-        // Show submit modal
+        // Show submit modal with nickname
+        document.getElementById("current-nickname-display").textContent =
+          userNickname;
         document
           .getElementById("submit-leaderboard-modal")
           .classList.add("visible");
-        document.getElementById("nickname-input").focus();
       }
 
       function closeSubmitLeaderboard() {
@@ -9958,11 +9987,8 @@
       }
 
       async function submitToLeaderboard() {
-        const nicknameInput = document.getElementById("nickname-input");
-        const nickname = nicknameInput.value.trim();
-
-        if (!nickname) {
-          alert("Please enter a nickname");
+        if (!userNickname) {
+          alert("Please set your nickname first");
           return;
         }
 
@@ -9971,8 +9997,9 @@
           return;
         }
 
-        const submitBtn =
-          nicknameInput.nextElementSibling.querySelector("button");
+        const submitBtn = document.querySelector(
+          "#submit-leaderboard-modal .btn-cta"
+        );
         const originalText = submitBtn.innerText;
         submitBtn.disabled = true;
         submitBtn.innerText = "Submitting...";
@@ -9985,7 +10012,7 @@
             },
             credentials: "include",
             body: JSON.stringify({
-              nickname: nickname,
+              nickname: userNickname,
               score: currentGameStats.score,
               equity: currentGameStats.equity,
               totalProfit: currentGameStats.totalProfit,
@@ -10022,13 +10049,97 @@
         }
       }
 
-      // Allow Enter key to submit
+      async function saveNickname() {
+        const nicknameInput = document.getElementById("nickname-setup-input");
+        const nickname = nicknameInput.value.trim();
+
+        if (!nickname) {
+          alert("Please enter a nickname");
+          return;
+        }
+
+        const submitBtn = document.querySelector(
+          "#nickname-setup-modal .btn-cta"
+        );
+        const originalText = submitBtn.innerText;
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Saving...";
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/user/nickname`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify({
+              nickname: nickname,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            userNickname = data.nickname;
+            document
+              .getElementById("nickname-setup-modal")
+              .classList.remove("visible");
+
+            // If there are pending game stats, show submit modal
+            if (currentGameStats) {
+              openSubmitLeaderboard();
+            }
+          } else {
+            alert(
+              "Failed to save nickname: " + (data.error || "Unknown error")
+            );
+            submitBtn.disabled = false;
+            submitBtn.innerText = originalText;
+          }
+        } catch (error) {
+          console.error("Error saving nickname:", error);
+          alert("Failed to save nickname. Please try again.");
+          submitBtn.disabled = false;
+          submitBtn.innerText = originalText;
+        }
+      }
+
+      async function checkUserInfo() {
+        try {
+          const response = await fetch(`${API_BASE_URL}/user/me`, {
+            credentials: "include",
+          });
+          const data = await response.json();
+
+          if (data.success) {
+            if (data.nickname) {
+              userNickname = data.nickname;
+            } else {
+              // First time user - show nickname setup modal
+              document
+                .getElementById("nickname-setup-modal")
+                .classList.add("visible");
+              document.getElementById("nickname-setup-input").focus();
+            }
+          }
+        } catch (error) {
+          console.error("Error checking user info:", error);
+        }
+      }
+
+      // Initialize on page load
       document.addEventListener("DOMContentLoaded", () => {
-        const nicknameInput = document.getElementById("nickname-input");
-        if (nicknameInput) {
-          nicknameInput.addEventListener("keypress", (e) => {
+        // Check user info and show nickname setup if needed
+        checkUserInfo();
+
+        // Allow Enter key to submit nickname setup
+        const nicknameSetupInput = document.getElementById(
+          "nickname-setup-input"
+        );
+        if (nicknameSetupInput) {
+          nicknameSetupInput.addEventListener("keypress", (e) => {
             if (e.key === "Enter") {
-              submitToLeaderboard();
+              saveNickname();
             }
           });
         }
