@@ -68,7 +68,7 @@ class TwitterService {
 
       // Step 3: Reply to poll tweet with chart image
       const imageReply = await this.readWriteClient.v2.tweet({
-        text: '📊 Here\'s the chart:',
+        text: `📊 Here's the chart:\n\n🎮 Try it yourself: ${config.referralLink}`,
         reply: {
           in_reply_to_tweet_id: pollTweet.data.id,
         },
