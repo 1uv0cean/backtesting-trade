@@ -60,7 +60,7 @@ class ScreenshotService {
       });
 
       // Give the chart a moment to fully render
-      await page.waitForTimeout(1000);
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Take screenshot
       const screenshot = await page.screenshot({
