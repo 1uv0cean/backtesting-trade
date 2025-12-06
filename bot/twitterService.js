@@ -50,25 +50,36 @@ class TwitterService {
         };
       }
 
-      // Upload image
-      const mediaId = await this.readWriteClient.v1.uploadMedia(imageBuffer, {
-        mimeType: 'image/png',
-      });
-
-      // Create tweet with poll and image
-      const tweet = await this.readWriteClient.v2.tweet({
+      // Step 1: Create tweet with poll only (Twitter doesn't allow poll + media in same tweet)
+      const pollTweet = await this.readWriteClient.v2.tweet({
         text: pollText,
         poll: {
           options: pollOptions,
           duration_minutes: config.bot.pollDurationMinutes,
+        },
+      });
+
+      console.log('✅ Poll tweet posted:', pollTweet.data.id);
+
+      // Step 2: Upload image
+      const mediaId = await this.readWriteClient.v1.uploadMedia(imageBuffer, {
+        mimeType: 'image/png',
+      });
+
+      // Step 3: Reply to poll tweet with chart image
+      const imageReply = await this.readWriteClient.v2.tweet({
+        text: '📊 Here\'s the chart:',
+        reply: {
+          in_reply_to_tweet_id: pollTweet.data.id,
         },
         media: {
           media_ids: [mediaId],
         },
       });
 
-      console.log('✅ Tweet posted with poll:', tweet.data.id);
-      return tweet;
+      console.log('✅ Chart image posted as reply:', imageReply.data.id);
+      
+      return pollTweet;
     } catch (error) {
       console.error('❌ Failed to post tweet:', error);
       throw error;
