@@ -41,13 +41,14 @@ module.exports = {
   messages: {
     poll: {
       templates: [
-        "📊 What's your move here?\n\n🟢 Long or 🔴 Short?\n\nVote now! 👇",
-        "🎯 Chart challenge!\n\nWhich way is this going?\n\n📈 Long vs 📉 Short\n\nMake your call! 👇",
-        "⚡ Quick decision time!\n\nBullish or Bearish?\n\n🟢 Long | 🔴 Short\n\nVote below! 👇",
-        "🔥 Trading scenario!\n\nWhat would you do?\n\n📈 Go Long or 📉 Go Short?\n\nCast your vote! 👇",
-        "💡 Test your skills!\n\nLong or Short?\n\nMake your prediction! 👇",
+        "📊 What's your move here?\n\n🟢 Long or 🔴 Short?\n\nVote now! 👇\n\n#Bitcoin #BTC #Crypto #Trading #PriceAction #Altcoins",
+        "🎯 Chart challenge!\n\nWhich way is this going?\n\n📈 Long vs 📉 Short\n\nMake your call! 👇\n\n#Bitcoin #BTC #Crypto #Trading #PriceAction #Altcoins",
+        "⚡ Quick decision time!\n\nBullish or Bearish?\n\n🟢 Long | 🔴 Short\n\nVote below! 👇\n\n#Bitcoin #BTC #Crypto #Trading #PriceAction #Altcoins",
+        "🔥 Trading scenario!\n\nWhat would you do?\n\n📈 Go Long or 📉 Go Short?\n\nCast your vote! 👇\n\n#Bitcoin #BTC #Crypto #Trading #PriceAction #Altcoins",
+        "💡 Test your skills!\n\nLong or Short?\n\nMake your prediction! 👇\n\n#Bitcoin #BTC #Crypto #Trading #PriceAction #Altcoins",
       ],
       options: ['🟢 Long', '🔴 Short'],
+      aggroTags: ['#GEM', '#100x', '#BullRun', '#BearMarket'],
     },
     
     results: {

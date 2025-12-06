@@ -123,7 +123,9 @@ class TwitterService {
   }
 
   generatePollText() {
-    return this.getRandomTemplate(config.messages.poll.templates);
+    const baseText = this.getRandomTemplate(config.messages.poll.templates);
+    const aggroTag = this.getRandomTemplate(config.messages.poll.aggroTags);
+    return `${baseText} ${aggroTag}`;
   }
 
   generateResultText(direction, percentChange) {
