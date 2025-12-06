@@ -1,5 +1,9 @@
 node_modules/
 leaderboard.json
+users.json
 .env
 *.log
+logs/
 .DS_Store
+bot/polls.json
+bot/screenshots/

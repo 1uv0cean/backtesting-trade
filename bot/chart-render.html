@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chart Renderer</title>
+  <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background-color: #131722;
+      overflow: hidden;
+    }
+    #chart {
+      width: 100vw;
+      height: 100vh;
+    }
+  </style>
+</head>
+<body>
+  <div id="chart"></div>
+  
+  <script>
+    // Listen for chart data from Puppeteer
+    window.renderChart = function(chartData) {
+      const chart = LightweightCharts.createChart(document.getElementById('chart'), {
+        width: chartData.width || 1200,
+        height: chartData.height || 675,
+        layout: {
+          background: { color: '#131722' },
+          textColor: '#d1d4dc',
+        },
+        grid: {
+          vertLines: { color: '#363a45' },
+          horzLines: { color: '#363a45' },
+        },
+        crosshair: {
+          mode: LightweightCharts.CrosshairMode.Normal,
+        },
+        rightPriceScale: {
+          borderColor: '#363a45',
+        },
+        timeScale: {
+          borderColor: '#363a45',
+          timeVisible: true,
+          secondsVisible: false,
+        },
+      });
+
+      const candlestickSeries = chart.addCandlestickSeries({
+        upColor: '#26a69a',
+        downColor: '#ef5350',
+        borderUpColor: '#26a69a',
+        borderDownColor: '#ef5350',
+        wickUpColor: '#26a69a',
+        wickDownColor: '#ef5350',
+      });
+
+      candlestickSeries.setData(chartData.candles);
+      chart.timeScale().fitContent();
+      
+      // Signal that chart is ready
+      window.chartReady = true;
+    };
+
+    // For direct data injection (alternative method)
+    window.addEventListener('message', function(event) {
+      if (event.data && event.data.type === 'RENDER_CHART') {
+        window.renderChart(event.data.chartData);
+      }
+    });
+  </script>
+</body>
+</html>

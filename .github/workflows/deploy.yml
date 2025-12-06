@@ -18,7 +18,7 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "index.html,server.js,package.json"
+          source: "index.html,server.js,package.json,btc_data.json,lightweight-charts.js,bot/**"
           target: "/home/${{ secrets.EC2_USER }}/backtesting-trade/"
 
       - name: Execute deployment script via SSH
@@ -44,21 +44,57 @@ jobs:
             # 3. Navigate to project directory
             cd /home/${{ secrets.EC2_USER }}/backtesting-trade
 
-            # 4. Install/update dependencies
-            echo "Installing dependencies..."
-            npm install --production
+            # 4. Create .env file with secrets
+            echo "Creating .env file..."
+            cat > .env << EOF
+            TWITTER_API_KEY=${{ secrets.TWITTER_API_KEY }}
+            TWITTER_API_SECRET=${{ secrets.TWITTER_API_SECRET }}
+            TWITTER_ACCESS_TOKEN=${{ secrets.TWITTER_ACCESS_TOKEN }}
+            TWITTER_ACCESS_SECRET=${{ secrets.TWITTER_ACCESS_SECRET }}
+            TWITTER_BEARER_TOKEN=${{ secrets.TWITTER_BEARER_TOKEN }}
+            REFERRAL_LINK=${{ secrets.REFERRAL_LINK }}
+            BOT_SCHEDULE_HOURS=4
+            BOT_POLL_DURATION_MINUTES=60
+            BOT_DRY_RUN=false
+            SERVER_URL=http://localhost:3000
+            EOF
 
-            # 5. Start or restart server with PM2
-            echo "Starting server with PM2..."
-            if pm2 list | grep -q "backtesting-trade"; then
-                echo "Restarting existing PM2 process..."
-                pm2 restart backtesting-trade
-            else
-                echo "Starting new PM2 process..."
-                pm2 start server.js --name backtesting-trade
+            # 5. Install/update dependencies
+            echo "Installing dependencies..."
+            npm install
+
+            # 6. Install Chromium for Puppeteer
+            if ! command -v chromium &> /dev/null && ! command -v chromium-browser &> /dev/null; then
+                echo "Installing Chromium..."
+                sudo apt-get update
+                sudo apt-get install -y chromium-browser
             fi
 
-            # 6. Save PM2 process list
-            pm2 save
+            # 7. Start or restart web server with PM2
+            echo "Starting web server with PM2..."
+            if pm2 list | grep -q "backtesting-server"; then
+                echo "Restarting web server..."
+                pm2 restart backtesting-server
+            else
+                echo "Starting new web server..."
+                pm2 start server.js --name backtesting-server
+            fi
 
+            # 8. Start or restart Twitter bot with PM2
+            echo "Starting Twitter bot with PM2..."
+            if pm2 list | grep -q "twitter-bot"; then
+                echo "Restarting Twitter bot..."
+                pm2 restart twitter-bot
+            else
+                echo "Starting new Twitter bot..."
+                pm2 start bot/index.js --name twitter-bot
+            fi
+
+            # 9. Save PM2 process list and setup startup
+            pm2 save
+            sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u ${{ secrets.EC2_USER }} --hp /home/${{ secrets.EC2_USER }} || true
+
+            # 10. Show status
             echo "Deployment Complete!"
+            pm2 status
+            pm2 logs twitter-bot --lines 20 --nostream
